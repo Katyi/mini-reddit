@@ -1,0 +1,17 @@
+.env
+backend/.env
+frontend/.env
+
+# Зависимости фронтенда
+node_modules/
+dist/
+.next/
+out/
+build/
+
+# Данные базы (чтобы не пушить гигабайты таблиц)
+postgres_data/
+
+# Бинарники Go (если вдруг скомпилируешь локально)
+main
+*.exe
