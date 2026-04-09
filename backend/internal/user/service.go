@@ -58,18 +58,23 @@ func (s *Service) RegisterUser(ctx context.Context, username, email, password st
 	return createdUser, token, nil
 }
 
-func (s *Service) LoginUser(ctx context.Context, email, password string) (string, error) {
+func (s *Service) LoginUser(ctx context.Context, email, password string) (User, string, error) {
 	// 1. Ищем юзера
 	user, err := s.repo.GetByEmail(ctx, email)
 	if err != nil {
-		return "", err
+		return User{}, "", err
 	}
 
 	// 2. Сравниваем хеш пароля из базы с тем, что ввел пользователь
 	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
 	if err != nil {
-		return "", err
+		return User{}, "", err
 	}
 
-	return s.generateToken(user.ID)
+	token, err := s.generateToken(user.ID)
+	if err != nil {
+		return User{}, "", err
+	}
+
+	return user, token, nil
 }

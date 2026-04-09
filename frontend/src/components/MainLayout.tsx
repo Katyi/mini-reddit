@@ -4,9 +4,11 @@ import { Outlet } from 'react-router-dom';
 import Header from './header/Header';
 import Footer from './footer/Footer';
 import Drawer from './drawer/Drawer';
+import AuthModal from './AuthModal/AuthModal';
 
 const MainLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
   return (
     <div className="flex flex-col min-h-screen">
       <Header
@@ -25,6 +27,8 @@ const MainLayout = () => {
         </main>
       </div>
       <Footer />
+
+      <AuthModal />
     </div>
   );
 };

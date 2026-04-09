@@ -51,8 +51,12 @@ const Drawer = ({ isOpen, toggleSidebar }: DrawerProps) => {
             {communities.map((c: Community) => (
               <Link
                 key={c.id}
-                // to={`/communities/${c.id}`}
-                to={`/r/${c.name}`} // Теперь ссылка красивая
+                to={`/r/${c.name}`}
+                onClick={() => {
+                  if (window.innerWidth < 768) {
+                    toggleSidebar();
+                  }
+                }}
                 className="block p-3 hover:bg-orange-50 rounded-lg"
               >
                 r/{c.name}

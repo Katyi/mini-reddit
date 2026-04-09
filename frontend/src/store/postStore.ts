@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import api from '../api/axios';
 
 interface PostState {
   posts: Post[];
@@ -17,11 +18,15 @@ export const usePostStore = create<PostState>((set) => ({
   fetchPosts: async (communityId) => {
     set({ isLoading: true });
     try {
-      const url = communityId
-        ? `http://localhost:9091/communities/${communityId}/posts`
-        : 'http://localhost:9091/posts';
-      const res = await fetch(url);
-      const data = await res.json();
+      // const url = communityId
+      //   ? `http://localhost:9091/communities/${communityId}/posts`
+      //   : 'http://localhost:9091/posts';
+      // const res = await fetch(url);
+      const res = communityId
+        ? await api.get(`/communities/${communityId}/posts`)
+        : await api.get('/posts');
+      // const data = await res.json();
+      const data = res.data;
       set({
         posts: data || [],
         isLoading: false,
@@ -34,9 +39,11 @@ export const usePostStore = create<PostState>((set) => ({
   fetchPost: async (id) => {
     set({ isLoading: true });
     try {
-      const url = `http://localhost:9091/posts/${id}`;
-      const res = await fetch(url);
-      const data = await res.json();
+      const url = `/posts/${id}`;
+      // const res = await fetch(url);
+      const res = await api.get(url);
+      // const data = await res.json();
+      const data = res.data;
       set({
         post: data || null,
         isLoading: false,

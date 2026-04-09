@@ -56,14 +56,15 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := h.service.LoginUser(r.Context(), input.Email, input.Password)
+	user, token, err := h.service.LoginUser(r.Context(), input.Email, input.Password)
 	if err != nil {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		http.Error(w, "invalid email or password", http.StatusUnauthorized)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"user":  user,
 		"token": token,
 	})
 }
