@@ -27,7 +27,11 @@ func (r *Repository) Create(ctx context.Context, c Community) (Community, error)
 }
 
 func (r *Repository) GetAll(ctx context.Context) ([]Community, error) {
-	query := `SELECT id, name, description, owner_id, created_at FROM communities`
+	query :=
+		`SELECT c.id, c.name, c.description, c.owner_id, u.username, c.created_at
+		FROM communities c
+		JOIN users u ON c.owner_id = u.id`
+
 	rows, err := r.db.Query(ctx, query)
 	if err != nil {
 		return nil, err
@@ -37,7 +41,7 @@ func (r *Repository) GetAll(ctx context.Context) ([]Community, error) {
 	var list []Community
 	for rows.Next() {
 		var c Community
-		if err := rows.Scan(&c.ID, &c.Name, &c.Description, &c.OwnerID, &c.CreatedAt); err != nil {
+		if err := rows.Scan(&c.ID, &c.Name, &c.Description, &c.OwnerID, &c.OwnerUsername, &c.CreatedAt); err != nil {
 			return nil, err
 		}
 		list = append(list, c)

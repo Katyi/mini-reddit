@@ -31,8 +31,14 @@ func (r *Repository) Create(ctx context.Context, c Comment) (Comment, error) {
 // Этот метод понадобится позже, чтобы показать комменты под постом
 func (r *Repository) GetByID(ctx context.Context, id string) (Comment, error) {
 	var c Comment
-	query := `SELECT id, post_id, author_id, content, created_at, parent_id FROM comments WHERE id = $1`
-	err := r.db.QueryRow(ctx, query, id).Scan(&c.ID, &c.PostID, &c.AuthorID, &c.Content, &c.CreatedAt, &c.ParentID)
+	query :=
+		`SELECT c.id, c.post_id, c.author_id, u.username, c.content, c.created_at, c.parent_id
+		FROM comments c 
+		JOIN users u ON c.author_id = u.id
+		WHERE c.id = $1`
+
+	err := r.db.QueryRow(ctx, query, id).Scan(
+		&c.ID, &c.PostID, &c.AuthorID, &c.AuthorUsername, &c.Content, &c.CreatedAt, &c.ParentID)
 	if err != nil {
 		return Comment{}, err
 	}
@@ -41,7 +47,13 @@ func (r *Repository) GetByID(ctx context.Context, id string) (Comment, error) {
 }
 
 func (r *Repository) GetByPostID(ctx context.Context, postID string) ([]Comment, error) {
-	query := `SELECT id, post_id, author_id, content, created_at, parent_id FROM comments WHERE post_id = $1`
+	query :=
+		`SELECT c.id, c.post_id, c.author_id, u.username, c.content, c.created_at, c.parent_id
+		FROM comments c
+		JOIN users u ON c.author_id = u.id
+		WHERE c.post_id = $1
+		ORDER BY c.created_at ASC`
+
 	rows, err := r.db.Query(ctx, query, postID)
 	if err != nil {
 		return nil, err
@@ -52,7 +64,7 @@ func (r *Repository) GetByPostID(ctx context.Context, postID string) ([]Comment,
 	var comments []Comment
 	for rows.Next() {
 		var c Comment
-		if err := rows.Scan(&c.ID, &c.PostID, &c.AuthorID, &c.Content, &c.CreatedAt, &c.ParentID); err != nil {
+		if err := rows.Scan(&c.ID, &c.PostID, &c.AuthorID, &c.AuthorUsername, &c.Content, &c.CreatedAt, &c.ParentID); err != nil {
 			return nil, err
 		}
 		comments = append(comments, c)

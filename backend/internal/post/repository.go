@@ -64,11 +64,12 @@ func (r *Repository) Create(ctx context.Context, post Post) (Post, error) {
 func (r *Repository) GetAll(ctx context.Context) ([]Post, error) {
 	query := `
         SELECT 
-            p.id, p.title, p.content, p.author_id, p.community_id, p.created_at,
+            p.id, p.title, p.content, p.author_id, u.username, p.community_id, p.created_at,
             COALESCE(SUM(v.vote_value), 0) as rating
         FROM posts p
+				JOIN users u ON p.author_id = u.id
         LEFT JOIN votes v ON p.id = v.post_id
-        GROUP BY p.id
+        GROUP BY p.id, u.username
         ORDER BY p.created_at DESC`
 
 	rows, err := r.db.Query(ctx, query)
@@ -80,7 +81,7 @@ func (r *Repository) GetAll(ctx context.Context) ([]Post, error) {
 	var posts []Post
 	for rows.Next() {
 		var p Post
-		if err := rows.Scan(&p.ID, &p.Title, &p.Content, &p.AuthorID, &p.CommunityID, &p.CreatedAt, &p.Rating); err != nil {
+		if err := rows.Scan(&p.ID, &p.Title, &p.Content, &p.AuthorID, &p.AuthorUsername, &p.CommunityID, &p.CreatedAt, &p.Rating); err != nil {
 			return nil, err
 		}
 		posts = append(posts, p)
@@ -92,14 +93,15 @@ func (r *Repository) GetByID(ctx context.Context, id string) (Post, error) {
 	var p Post
 	query := `
         SELECT 
-            p.id, p.title, p.content, p.author_id, p.community_id, p.created_at,
+            p.id, p.title, p.content, p.author_id, u.username, p.community_id, p.created_at,
             COALESCE(SUM(v.vote_value), 0) as rating
         FROM posts p
+				JOIN users u ON p.author_id = u.id
         LEFT JOIN votes v ON p.id = v.post_id
         WHERE p.id = $1
-        GROUP BY p.id`
+        GROUP BY p.id, u.username`
 
-	err := r.db.QueryRow(ctx, query, id).Scan(&p.ID, &p.Title, &p.Content, &p.AuthorID, &p.CommunityID, &p.CreatedAt, &p.Rating)
+	err := r.db.QueryRow(ctx, query, id).Scan(&p.ID, &p.Title, &p.Content, &p.AuthorID, &p.AuthorUsername, &p.CommunityID, &p.CreatedAt, &p.Rating)
 	if err != nil {
 		return Post{}, ErrPostNotFound
 	}
@@ -144,12 +146,13 @@ func (r *Repository) GetByCommunityID(ctx context.Context, communityID string) (
 	// 2. Если в Redis пусто (или ошибка), идем в Postgres
 	query := `
         SELECT 
-            p.id, p.title, p.content, p.author_id, p.community_id, p.created_at,
+            p.id, p.title, p.content, p.author_id, u.username, p.community_id, p.created_at,
             COALESCE(SUM(v.vote_value), 0) as rating
         FROM posts p
+				JOIN users u ON p.author_id = u.id
         LEFT JOIN votes v ON p.id = v.post_id
         WHERE p.community_id = $1
-        GROUP BY p.id
+        GROUP BY p.id, u.username
         ORDER BY p.created_at DESC`
 
 	rows, err := r.db.Query(ctx, query, communityID)
@@ -161,7 +164,7 @@ func (r *Repository) GetByCommunityID(ctx context.Context, communityID string) (
 	var posts []Post
 	for rows.Next() {
 		var p Post
-		if err := rows.Scan(&p.ID, &p.Title, &p.Content, &p.AuthorID, &p.CommunityID, &p.CreatedAt, &p.Rating); err != nil {
+		if err := rows.Scan(&p.ID, &p.Title, &p.Content, &p.AuthorID, &p.AuthorUsername, &p.CommunityID, &p.CreatedAt, &p.Rating); err != nil {
 			return nil, err
 		}
 		posts = append(posts, p)
