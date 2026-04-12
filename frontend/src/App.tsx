@@ -3,10 +3,12 @@ import Home from './pages/home/Home';
 import About from './pages/about/About';
 import MainLayout from './components/MainLayout';
 import Post from './pages/post/Post';
+import { Toaster } from 'react-hot-toast';
 
 function App() {
   return (
     <Router>
+      <Toaster position="top-center" reverseOrder={false} />
       <Routes>
         <Route element={<MainLayout />}>
           <Route path="/" element={<Home />} />

@@ -29,9 +29,26 @@ func (r *Repository) Create(ctx context.Context, post Post) (Post, error) {
 	query := `
         INSERT INTO posts (title, content, author_id, community_id) 
         VALUES ($1, $2, $3, $4) 
-        RETURNING id, created_at`
+        RETURNING id, title, content, author_id, community_id, created_at`
 
-	err := r.db.QueryRow(ctx, query, post.Title, post.Content, post.AuthorID, post.CommunityID).Scan(&post.ID, &post.CreatedAt)
+	// err := r.db.QueryRow(ctx, query, post.Title, post.Content, post.AuthorID, post.CommunityID, post.CreatedAt).Scan(
+	// 	&post.ID,
+	// 	&post.Title,
+	// 	&post.Content,
+	// 	&post.AuthorID,
+	// 	&post.CommunityID,
+	// 	&post.CreatedAt,
+	// )
+
+	err := r.db.QueryRow(ctx, query, post.Title, post.Content, post.AuthorID, post.CommunityID).Scan(
+		&post.ID,
+		&post.Title,
+		&post.Content,
+		&post.AuthorID,
+		&post.CommunityID,
+		&post.CreatedAt,
+	)
+
 	if err != nil {
 		return post, err
 	}
@@ -40,11 +57,6 @@ func (r *Repository) Create(ctx context.Context, post Post) (Post, error) {
 	cacheKey := "community:posts:" + post.CommunityID
 	r.rdb.Del(ctx, cacheKey)
 
-	// 3. ОТПРАВКА В KAFKA (Асинхронное событие)
-	// msg := kafka.Message{
-	// 	Key:   []byte(post.ID),
-	// 	Value: []byte("New post created: " + post.Title),
-	// }
 	msg := kafka.Message{
 		Key:   []byte(post.ID), // ID всегда разный, так что Kafka поймет, что это новый пост
 		Value: []byte("New post: " + post.Title),
@@ -54,9 +66,6 @@ func (r *Repository) Create(ctx context.Context, post Post) (Post, error) {
 	} else {
 		fmt.Println("✅ Kafka Message Sent for post:", post.ID)
 	}
-
-	// Мы не ждем долгого ответа, просто кидаем в очередь
-	// go r.kw.WriteMessages(ctx, msg)
 
 	return post, err
 }
@@ -108,25 +117,54 @@ func (r *Repository) GetByID(ctx context.Context, id string) (Post, error) {
 	return p, nil
 }
 
-func (r *Repository) Update(ctx context.Context, id string, updated Post) (Post, error) {
-	// query := "UPDATE posts SET title = $1, content = $2 WHERE id = $3"
+// func (r *Repository) Update(ctx context.Context, id string, updated Post) (Post, error) {
+// 	query := `
+//         UPDATE posts
+//         SET
+//             title = COALESCE(NULLIF($1, ''), title),
+//             content = COALESCE(NULLIF($2, ''), content)
+//         WHERE id = $3
+//     `
+// 	_, err := r.db.Exec(ctx, query, updated.Title, updated.Content, id)
+// 	if err != nil {
+// 		return Post{}, err
+// 	}
+// 	updated.ID = id
+// 	return updated, nil
+// }
+
+func (r *Repository) Update(ctx context.Context, id string, post Post) (Post, error) {
 	query := `
         UPDATE posts 
-        SET 
-            title = COALESCE(NULLIF($1, ''), title), 
-            content = COALESCE(NULLIF($2, ''), content) 
-        WHERE id = $3
-    `
-	_, err := r.db.Exec(ctx, query, updated.Title, updated.Content, id)
-	if err != nil {
-		return Post{}, err
-	}
-	updated.ID = id
-	return updated, nil
+        SET title = $1, content = $2 
+        WHERE id = $3 
+        RETURNING id, title, content, author_id, community_id, created_at` // Добавил author_id
+
+	err := r.db.QueryRow(ctx, query, post.Title, post.Content, id).Scan(
+		&post.ID,
+		&post.Title,
+		&post.Content,
+		&post.AuthorID, // Добавил получение author_id
+		&post.CommunityID,
+		&post.CreatedAt,
+	)
+	return post, err
 }
 
 func (r *Repository) Delete(ctx context.Context, id string) error {
-	_, err := r.db.Exec(ctx, "DELETE FROM posts WHERE id = $1", id)
+	var communityID string
+	// _, err := r.db.Exec(ctx, "DELETE FROM posts WHERE id = $1", id)
+	err := r.db.QueryRow(ctx, "SELECT community_id FROM posts WHERE id = $1", id).Scan(&communityID)
+
+	_, err = r.db.Exec(ctx, "DELETE FROM posts WHERE id = $1", id)
+	if err != nil {
+		return err
+	}
+
+	cacheKey := "community:posts:" + communityID
+	r.rdb.Del(ctx, cacheKey)
+
+	// return err
 	return err
 }
 

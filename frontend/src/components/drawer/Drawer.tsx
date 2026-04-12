@@ -1,8 +1,11 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import closeIcon from '../../assets/icons/closeIcon.svg';
 import burger from '../../assets/icons/burger.svg';
+import addIcon from '../../assets/icons/addIcon.svg';
 import { useCommunityStore } from '../../store/communityStore';
 import { Link } from 'react-router-dom';
+import { useAuthStore } from '../../store/authStore';
+import CreateCommunityModal from '../createCommunityModal/CreateCommunityModal';
 
 interface DrawerProps {
   isOpen: boolean;
@@ -11,6 +14,8 @@ interface DrawerProps {
 
 const Drawer = ({ isOpen, toggleSidebar }: DrawerProps) => {
   const { communities, fetchCommunities } = useCommunityStore();
+  const { user } = useAuthStore();
+  const [isCommModalOpen, setIsCommModalOpen] = useState(false);
 
   useEffect(() => {
     fetchCommunities();
@@ -40,6 +45,15 @@ const Drawer = ({ isOpen, toggleSidebar }: DrawerProps) => {
         <div className={`${!isOpen && 'hidden'} w-72`}>
           <div className="p-4 border-b flex justify-between items-center">
             <span className="font-bold text-[#576F76]">COMMUNITIES</span>
+            {/* {user && (
+              <button
+                onClick={() => setIsCommModalOpen(true)}
+                className="p-1 hover:bg-gray-200 rounded-md text-xl leading-none"
+              >
+                +
+              </button>
+            )} */}
+
             <button
               onClick={toggleSidebar}
               className="cursor-pointer p-1 hover:bg-gray-100 rounded"
@@ -47,6 +61,15 @@ const Drawer = ({ isOpen, toggleSidebar }: DrawerProps) => {
               <img src={closeIcon} alt="close" width={18} />
             </button>
           </div>
+          {user && (
+            <button
+              onClick={() => setIsCommModalOpen(true)}
+              className="mt-2 mx-2 flex items-center gap-1.5 p-3 w-[calc(100%-16px)] h-12 hover:bg-orange-50 rounded-lg cursor-pointer"
+            >
+              <img src={addIcon} alt="add community" width={24} height={24} />
+              <p>Start a community</p>
+            </button>
+          )}
           <nav className="p-2 overflow-y-auto max-h-[calc(100vh-60px)]">
             {communities.map((c: Community) => (
               <Link
@@ -75,6 +98,11 @@ const Drawer = ({ isOpen, toggleSidebar }: DrawerProps) => {
           <img src={burger} alt="open" width={20} />
         </button>
       )}
+
+      <CreateCommunityModal
+        isOpen={isCommModalOpen}
+        onClose={() => setIsCommModalOpen(false)}
+      />
     </>
   );
 };

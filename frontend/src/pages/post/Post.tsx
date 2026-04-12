@@ -1,15 +1,57 @@
-import { useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { usePostStore } from '../../store/postStore';
 import Comments from '../../components/comments/Comments';
+import PostModal from '../../components/postModal/PostModal';
+import { useAuthStore } from '../../store/authStore';
+import ConfirmModal from '../../components/confirmModal/ConfirmModal';
+import toast from 'react-hot-toast';
 
 const Post = () => {
   const { id } = useParams();
-  const { post, fetchPost } = usePostStore();
+  const navigate = useNavigate();
+  const { user } = useAuthStore();
+  const { post, fetchPost, deletePost, isLoading } = usePostStore();
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
+  const isAuthor = useMemo(() => {
+    if (!user || !post) return false;
+    return String(user.id) === String(post.author_id);
+  }, [user?.id, post?.author_id]);
 
   useEffect(() => {
     if (id) fetchPost(id);
   }, [id, fetchPost]);
+
+  const handleDelete = async () => {
+    if (!post) return;
+    await toast.promise(
+      deletePost(post.id),
+      {
+        loading: 'Deleting post...',
+        success: 'Post deleted successfully!',
+        error: 'Failed to delete post. Please try again.',
+      },
+      {
+        style: {
+          borderRadius: '10px',
+          background: '#333',
+          color: '#fff',
+          fontSize: '14px',
+        },
+        success: {
+          duration: 3000,
+          icon: '🔥',
+        },
+      },
+    );
+
+    navigate('/');
+  };
+
+  if (isLoading && !post) return <div>Loading...</div>;
+  if (!post) return <div>Post not found</div>;
 
   return (
     <div className="w-full flex justify-center">
@@ -26,6 +68,23 @@ const Post = () => {
             </div>
 
             <h1 className="text-3xl font-bold mb-4">{post?.title}</h1>
+            {isAuthor && (
+              <div className="flex gap-4 mb-4">
+                <button
+                  onClick={() => setIsEditOpen(true)}
+                  className="text-xs font-bold text-gray-500 hover:underline cursor-pointer"
+                >
+                  Edit
+                </button>
+                <button
+                  // onClick={onDelete}
+                  onClick={() => setIsDeleteModalOpen(true)}
+                  className="text-xs font-bold text-red-500 hover:underline cursor-pointer"
+                >
+                  Delete
+                </button>
+              </div>
+            )}
             {/* <p className="text-sm">{post?.content}</p> */}
             <div className="text-gray-700 leading-relaxed whitespace-pre-wrap mb-8">
               {post?.content}
@@ -41,6 +100,30 @@ const Post = () => {
           </div>
         </aside>
       </div>
+
+      {/* Сама модалка подтверждения */}
+      <ConfirmModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleDelete}
+        title="Delete Post?"
+        message="This action cannot be undone. Your post will be permanently removed from this community."
+      />
+
+      {post && (
+        <PostModal
+          // key={post.id}
+          key={`${post.id}-${isEditOpen}`}
+          isOpen={isEditOpen}
+          onClose={() => setIsEditOpen(false)}
+          initialData={{
+            id: post.id,
+            title: post.title,
+            content: post.content,
+            community_id: post.community_id,
+          }}
+        />
+      )}
     </div>
   );
 };

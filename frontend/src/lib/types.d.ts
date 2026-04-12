@@ -2,19 +2,19 @@ interface Community {
   id: string;
   name: string;
   description: string;
-  ownerID: string;
+  owner_id: string;
   owner_username: string;
-  createdAt: string;
+  created_at: string;
 }
 
 interface Post {
-  id: number;
+  id: string;
   title: string;
   content: string;
   author_id: string;
   author_username: string;
-  community_id: number;
-  createdAt: string;
+  community_id: string;
+  created_at: string;
   rating: number;
 }
 
@@ -32,7 +32,7 @@ interface User {
   id: string;
   username: string;
   email: string;
-  CreatedAt: string;
+  Create_at: string;
 }
 
 // type User struct {

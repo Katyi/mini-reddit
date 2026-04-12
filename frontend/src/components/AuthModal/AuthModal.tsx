@@ -2,34 +2,67 @@ import React, { useState } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../api/axios';
 import closeIcon from '../../assets/icons/closeIcon.svg';
-import { AxiosError } from 'axios';
+import { loginSchema, registerSchema } from '../../lib/schemas';
+import axios from 'axios';
+
+type ValidationErrors = {
+  username?: string[];
+  email?: string[] | undefined;
+  password?: string[] | undefined;
+  confirmPassword?: string[];
+  server?: string;
+};
 
 const AuthModal = () => {
   const { isModalOpen, modalType, closeModal, setAuth, openModal } =
     useAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [username, setUsername] = useState(''); // Только для регистрации
-  const [error, setError] = useState('');
+  const [username, setUsername] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [error, setError] = useState<ValidationErrors>({});
 
   if (!isModalOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError({});
+
+    const data =
+      modalType === 'login'
+        ? { email, password }
+        : { username, email, password, confirmPassword };
+
+    const schema = modalType === 'login' ? loginSchema : registerSchema;
+    const result = schema.safeParse(data);
+
+    if (!result.success) {
+      const validationErrors = result.error.flatten().fieldErrors;
+      setError(validationErrors as ValidationErrors);
+      return;
+    }
+
     try {
       const endpoint = modalType === 'login' ? '/login' : '/register';
-      const payload =
-        modalType === 'login'
-          ? { email, password }
-          : { username, email, password };
-
-      const res = await api.post(endpoint, payload);
-      setAuth(res.data.user, res.data.token);
+      const res = await api.post(endpoint, result.data);
+      setAuth(res.data.user, res.data.access_token, res.data.refresh_token);
       closeModal();
+
+      setEmail('');
+      setPassword('');
+      setUsername('');
+      setConfirmPassword('');
     } catch (err) {
-      const axiosError = err as AxiosError<BackendError>;
-      setError(axiosError.response?.data.message || 'Error');
+      let serverMessage = 'Something went wrong. Please try again.';
+
+      if (axios.isAxiosError(err)) {
+        serverMessage = err.response?.data || serverMessage;
+      } else if (err instanceof Error) {
+        serverMessage = err.message;
+      }
+
+      setError({ server: serverMessage });
+      console.error('Auth error:', serverMessage);
     }
   };
 
@@ -50,39 +83,77 @@ const AuthModal = () => {
           By continuing, you agree to our User Agreement and Privacy Policy.
         </p>
 
-        <form onSubmit={handleSubmit} className="space-y-4 min-h-[34vh]">
+        <form onSubmit={handleSubmit} className="space-y-1 min-h-[52vh]">
           {modalType === 'register' && (
-            <input
-              type="text"
-              placeholder="Username"
-              className="w-full p-3 bg-gray-50 border border-gray-200 rounded-full focus:outline-none focus:border-orange-500"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-            />
+            <>
+              <input
+                type="text"
+                placeholder="Username"
+                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-full focus:outline-none focus:border-orange-500"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+              />
+              <div className="h-4 mb-2 pl-2">
+                {error.username && (
+                  <p className="text-red-500 text-xs">{error.username[0]}</p>
+                )}
+              </div>
+            </>
           )}
+
           <input
             type="email"
             placeholder="Email"
             className="w-full p-3 bg-gray-50 border border-gray-200 rounded-full focus:outline-none focus:border-orange-500"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            required
           />
+          <div className="h-4 mb-2 pl-2">
+            {error.email && (
+              <p className="text-red-500 text-xs">{error.email[0]}</p>
+            )}
+          </div>
           <input
             type="password"
             placeholder="Password"
             className="w-full p-3 bg-gray-50 border border-gray-200 rounded-full focus:outline-none focus:border-orange-500"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            required
           />
+          <div className="h-4 mb-2 pl-2">
+            {error.password && (
+              <p className="text-red-500 text-xs">{error.password[0]}</p>
+            )}
+          </div>
 
-          {error && <p className="text-red-500 text-xs px-2">{error}</p>}
+          {modalType === 'register' && (
+            <>
+              <input
+                type="password"
+                placeholder="Confirm Password"
+                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-full focus:outline-none focus:border-orange-500"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+              />
+              <div className="h-4 mb-2 pl-2">
+                {error.confirmPassword && (
+                  <p className="text-red-500 text-xs">
+                    {error.confirmPassword[0]}
+                  </p>
+                )}
+              </div>
+            </>
+          )}
+
+          <div className="min-h-6 mb-4 pl-2">
+            {error.server && (
+              <div className="text-red-500 text-xs">{error.server}</div>
+            )}
+          </div>
 
           <button
             type="submit"
-            className="w-full py-3 bg-orange-600 text-white font-bold rounded-full hover:bg-orange-700 transition-colors"
+            className="w-full py-3 bg-orange-600 text-white font-bold rounded-full hover:bg-orange-700 transition-colors cursor-pointer"
           >
             {modalType === 'login' ? 'Log In' : 'Continue'}
           </button>

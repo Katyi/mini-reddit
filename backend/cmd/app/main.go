@@ -122,6 +122,7 @@ func main() {
 
 	r.HandleFunc("/register", userHandler.Register).Methods("POST")
 	r.HandleFunc("/login", userHandler.Login).Methods("POST")
+	r.HandleFunc("/refresh", userHandler.RefreshToken).Methods("POST")
 
 	r.HandleFunc("/posts/{id}/comments", commentHandler.GetCommentsByPost).Methods("GET")
 	r.Handle("/posts/{id}/comments", user.AuthMiddleware(http.HandlerFunc(commentHandler.CreateComment))).Methods("POST")
@@ -131,8 +132,11 @@ func main() {
 	r.Handle("/posts/{id}/vote", user.AuthMiddleware(http.HandlerFunc(voteHandler.Vote))).Methods("POST")
 
 	r.HandleFunc("/communities", commHandler.GetAll).Methods("GET")
-	r.Handle("/communities", user.AuthMiddleware(http.HandlerFunc(commHandler.Create))).Methods("POST")
 	r.HandleFunc("/communities/{id}/posts", postHandler.GetPostsByCommunity).Methods("GET")
+	r.HandleFunc("/communities/name/{name}", commHandler.GetByName).Methods("GET")
+	r.Handle("/communities", user.AuthMiddleware(http.HandlerFunc(commHandler.Create))).Methods("POST")
+	r.Handle("/communities/{id}", user.AuthMiddleware(http.HandlerFunc(commHandler.Update))).Methods("PATCH")
+	r.Handle("/communities/{id}", user.AuthMiddleware(http.HandlerFunc(commHandler.Delete))).Methods("DELETE")
 
 	fmt.Printf("Server is running on :%s\n", port)
 
