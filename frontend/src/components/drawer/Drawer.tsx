@@ -5,7 +5,7 @@ import addIcon from '../../assets/icons/addIcon.svg';
 import { useCommunityStore } from '../../store/communityStore';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
-import CreateCommunityModal from '../createCommunityModal/CreateCommunityModal';
+import CommunityModal from '../communityModal/CommunityModal';
 
 interface DrawerProps {
   isOpen: boolean;
@@ -99,7 +99,7 @@ const Drawer = ({ isOpen, toggleSidebar }: DrawerProps) => {
         </button>
       )}
 
-      <CreateCommunityModal
+      <CommunityModal
         isOpen={isCommModalOpen}
         onClose={() => setIsCommModalOpen(false)}
       />

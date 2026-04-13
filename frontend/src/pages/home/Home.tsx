@@ -4,7 +4,7 @@ import { usePostStore } from '../../store/postStore';
 import { useCommunityStore } from '../../store/communityStore';
 import { useAuthStore } from '../../store/authStore';
 import { formatDate } from '../../lib/formatDate';
-import CreateCommunityModal from '../../components/createCommunityModal/CreateCommunityModal';
+import CommunityModal from '../../components/communityModal/CommunityModal';
 import PostList from '../../components/postList/PostList';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../../components/confirmModal/ConfirmModal'; // Импортируй свою новую модалку
@@ -148,7 +148,7 @@ const Home = () => {
       </div>
 
       {currentCommunity && (
-        <CreateCommunityModal
+        <CommunityModal
           key={currentCommunity.id}
           isOpen={isEditModalOpen}
           onClose={() => setIsEditModalOpen(false)}

@@ -31,15 +31,6 @@ func (r *Repository) Create(ctx context.Context, post Post) (Post, error) {
         VALUES ($1, $2, $3, $4) 
         RETURNING id, title, content, author_id, community_id, created_at`
 
-	// err := r.db.QueryRow(ctx, query, post.Title, post.Content, post.AuthorID, post.CommunityID, post.CreatedAt).Scan(
-	// 	&post.ID,
-	// 	&post.Title,
-	// 	&post.Content,
-	// 	&post.AuthorID,
-	// 	&post.CommunityID,
-	// 	&post.CreatedAt,
-	// )
-
 	err := r.db.QueryRow(ctx, query, post.Title, post.Content, post.AuthorID, post.CommunityID).Scan(
 		&post.ID,
 		&post.Title,
@@ -117,22 +108,6 @@ func (r *Repository) GetByID(ctx context.Context, id string) (Post, error) {
 	return p, nil
 }
 
-// func (r *Repository) Update(ctx context.Context, id string, updated Post) (Post, error) {
-// 	query := `
-//         UPDATE posts
-//         SET
-//             title = COALESCE(NULLIF($1, ''), title),
-//             content = COALESCE(NULLIF($2, ''), content)
-//         WHERE id = $3
-//     `
-// 	_, err := r.db.Exec(ctx, query, updated.Title, updated.Content, id)
-// 	if err != nil {
-// 		return Post{}, err
-// 	}
-// 	updated.ID = id
-// 	return updated, nil
-// }
-
 func (r *Repository) Update(ctx context.Context, id string, post Post) (Post, error) {
 	query := `
         UPDATE posts 
@@ -153,7 +128,6 @@ func (r *Repository) Update(ctx context.Context, id string, post Post) (Post, er
 
 func (r *Repository) Delete(ctx context.Context, id string) error {
 	var communityID string
-	// _, err := r.db.Exec(ctx, "DELETE FROM posts WHERE id = $1", id)
 	err := r.db.QueryRow(ctx, "SELECT community_id FROM posts WHERE id = $1", id).Scan(&communityID)
 
 	_, err = r.db.Exec(ctx, "DELETE FROM posts WHERE id = $1", id)
@@ -164,7 +138,6 @@ func (r *Repository) Delete(ctx context.Context, id string) error {
 	cacheKey := "community:posts:" + communityID
 	r.rdb.Del(ctx, cacheKey)
 
-	// return err
 	return err
 }
 

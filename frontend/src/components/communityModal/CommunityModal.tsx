@@ -20,11 +20,7 @@ type ValidationErrors = {
   server?: string;
 };
 
-const CreateCommunityModal: React.FC<Props> = ({
-  isOpen,
-  onClose,
-  initialData,
-}) => {
+const CommunityModal: React.FC<Props> = ({ isOpen, onClose, initialData }) => {
   const [name, setName] = useState(initialData?.name || '');
   const [description, setDescription] = useState(
     initialData?.description || '',
@@ -165,4 +161,4 @@ const CreateCommunityModal: React.FC<Props> = ({
   );
 };
 
-export default CreateCommunityModal;
+export default CommunityModal;

@@ -34,8 +34,8 @@ func (s *Service) DeleteComment(ctx context.Context, commentID string, requester
 		return fmt.Errorf("you are not the author of this comment")
 	}
 
-	// 3. Удаляем
-	return s.repo.Delete(ctx, commentID)
+	// 3. SoftDelete
+	return s.repo.SoftDelete(ctx, commentID)
 }
 
 func (s *Service) UpdateComment(ctx context.Context, commentID string, content string, requesterID string) (Comment, error) {
