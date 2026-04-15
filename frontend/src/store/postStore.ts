@@ -16,9 +16,10 @@ interface PostState {
   ) => Promise<void>;
   updatePost: (id: string, title: string, content: string) => Promise<void>;
   deletePost: (id: string) => Promise<void>;
+  votePost: (postId: string, value: number) => Promise<void>;
 }
 
-export const usePostStore = create<PostState>((set) => ({
+export const usePostStore = create<PostState>((set, get) => ({
   posts: [],
   recentPosts: [],
   post: null,
@@ -119,5 +120,43 @@ export const usePostStore = create<PostState>((set) => ({
       recentPosts: state.recentPosts.filter((p) => p.id !== id),
       post: state.post?.id === id ? null : state.post,
     }));
+  },
+
+  votePost: async (postId, value) => {
+    const state = get();
+    const currentPosts = state.posts;
+    const oldPost = currentPosts.find((p) => p.id === postId) || state.post;
+
+    if (!oldPost) return;
+
+    // Сохраняем старое состояние на случай ошибки
+    const previousPosts = [...state.posts];
+    const previousCurrentPost = state.post ? { ...state.post } : null;
+
+    try {
+      // 1. Вместо того чтобы просто плюсовать, мы можем сделать
+      // "мини-проверку" прямо здесь, если бы у нас было поле user_vote.
+      // Но так как его нет, давай просто доверять бэкенду,
+      // НО сделаем это быстро.
+
+      const res = await api.post(`/posts/${postId}/vote`, { value });
+      const serverRating = res.data.new_rating;
+
+      // 2. Обновляем состояние ТОЛЬКО после ответа,
+      // но так как бэк теперь быстрый, задержки не будет.
+      set((state) => ({
+        posts: state.posts.map((p) =>
+          p.id === postId ? { ...p, rating: serverRating } : p,
+        ),
+        post:
+          state.post?.id === postId
+            ? { ...state.post, rating: serverRating }
+            : state.post,
+      }));
+    } catch (err) {
+      console.error(err);
+      // Возвращаем старые данные при ошибке
+      set({ posts: previousPosts, post: previousCurrentPost });
+    }
   },
 }));

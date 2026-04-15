@@ -26,6 +26,7 @@ interface Comment {
   parent_id: string;
   content: string;
   created_at: string;
+  rating: number;
 }
 
 interface User {
@@ -34,15 +35,6 @@ interface User {
   email: string;
   Create_at: string;
 }
-
-// type User struct {
-// 	ID           string    `json:"id"`
-// 	Username     string    `json:"username"`
-// 	Email        string    `json:"email"`
-// 	Password     string    `json:"password,omitempty"` // omitempty, чтобы не светить в ответах
-// 	PasswordHash string    `json:"-"`                  // вообще не выводим в JSON
-// 	CreatedAt    time.Time `json:"created_at"`
-// }
 
 interface BackendError {
   message: string;

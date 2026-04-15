@@ -64,12 +64,9 @@ func (r *Repository) Create(ctx context.Context, post Post) (Post, error) {
 func (r *Repository) GetAll(ctx context.Context) ([]Post, error) {
 	query := `
         SELECT 
-            p.id, p.title, p.content, p.author_id, u.username, p.community_id, p.created_at,
-            COALESCE(SUM(v.vote_value), 0) as rating
+            p.id, p.title, p.content, p.author_id, u.username, p.community_id, p.created_at, p.rating
         FROM posts p
 				JOIN users u ON p.author_id = u.id
-        LEFT JOIN votes v ON p.id = v.post_id
-        GROUP BY p.id, u.username
         ORDER BY p.created_at DESC`
 
 	rows, err := r.db.Query(ctx, query)
@@ -93,13 +90,10 @@ func (r *Repository) GetByID(ctx context.Context, id string) (Post, error) {
 	var p Post
 	query := `
         SELECT 
-            p.id, p.title, p.content, p.author_id, u.username, p.community_id, p.created_at,
-            COALESCE(SUM(v.vote_value), 0) as rating
+            p.id, p.title, p.content, p.author_id, u.username, p.community_id, p.created_at, p.rating
         FROM posts p
 				JOIN users u ON p.author_id = u.id
-        LEFT JOIN votes v ON p.id = v.post_id
-        WHERE p.id = $1
-        GROUP BY p.id, u.username`
+        WHERE p.id = $1`
 
 	err := r.db.QueryRow(ctx, query, id).Scan(&p.ID, &p.Title, &p.Content, &p.AuthorID, &p.AuthorUsername, &p.CommunityID, &p.CreatedAt, &p.Rating)
 	if err != nil {
@@ -112,18 +106,15 @@ func (r *Repository) Update(ctx context.Context, id string, post Post) (Post, er
 	query := `
         UPDATE posts 
         SET title = $1, content = $2 
-        WHERE id = $3 
-        RETURNING id, title, content, author_id, community_id, created_at` // Добавил author_id
+        WHERE id = $3`
 
-	err := r.db.QueryRow(ctx, query, post.Title, post.Content, id).Scan(
-		&post.ID,
-		&post.Title,
-		&post.Content,
-		&post.AuthorID, // Добавил получение author_id
-		&post.CommunityID,
-		&post.CreatedAt,
-	)
-	return post, err
+	_, err := r.db.Exec(ctx, query, post.Title, post.Content, id)
+	if err != nil {
+		return Post{}, err
+	}
+
+	// Возвращаем пост целиком вместе с рейтингом и юзернеймом через существующий метод
+	return r.GetByID(ctx, id)
 }
 
 func (r *Repository) Delete(ctx context.Context, id string) error {
@@ -137,6 +128,7 @@ func (r *Repository) Delete(ctx context.Context, id string) error {
 
 	cacheKey := "community:posts:" + communityID
 	r.rdb.Del(ctx, cacheKey)
+	// r.rdb.Del(ctx, "post:"+id)
 
 	return err
 }
@@ -157,13 +149,10 @@ func (r *Repository) GetByCommunityID(ctx context.Context, communityID string) (
 	// 2. Если в Redis пусто (или ошибка), идем в Postgres
 	query := `
         SELECT 
-            p.id, p.title, p.content, p.author_id, u.username, p.community_id, p.created_at,
-            COALESCE(SUM(v.vote_value), 0) as rating
+            p.id, p.title, p.content, p.author_id, u.username, p.community_id, p.created_at, p.rating
         FROM posts p
 				JOIN users u ON p.author_id = u.id
-        LEFT JOIN votes v ON p.id = v.post_id
         WHERE p.community_id = $1
-        GROUP BY p.id, u.username
         ORDER BY p.created_at DESC`
 
 	rows, err := r.db.Query(ctx, query, communityID)

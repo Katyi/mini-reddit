@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"github.com/Katyi/mini-reddit/backend/internal/comment"
+	"github.com/Katyi/mini-reddit/backend/internal/commentvote"
 	"github.com/Katyi/mini-reddit/backend/internal/community"
 	"github.com/Katyi/mini-reddit/backend/internal/post"
 	"github.com/Katyi/mini-reddit/backend/internal/user"
@@ -90,8 +91,8 @@ func main() {
 	commentService := comment.NewService(commentRepo)
 	commentHandler := comment.NewHandler(commentService)
 
-	// Для лайков и дизлайков
-	voteRepo := vote.NewRepository(dbpool)
+	// Для лайков и дизлайков постов
+	voteRepo := vote.NewRepository(dbpool, rdb)
 	voteService := vote.NewService(voteRepo)
 	voteHandler := vote.NewHandler(voteService)
 
@@ -99,6 +100,11 @@ func main() {
 	commRepo := community.NewRepository(dbpool)
 	commService := community.NewService(commRepo)
 	commHandler := community.NewHandler(commService)
+
+	// Для лайков и дизлайков комментариев
+	commVoteRepo := commentvote.NewRepository(dbpool, rdb)
+	commVoteService := commentvote.NewService(commVoteRepo)
+	commVoteHandler := commentvote.NewHandler(commVoteService)
 
 	c := cors.New(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:3000"}, // Адрес твоего будущего фронта
@@ -130,6 +136,8 @@ func main() {
 	r.Handle("/comments/{id}", user.AuthMiddleware(http.HandlerFunc(commentHandler.DeleteComment))).Methods("DELETE")
 
 	r.Handle("/posts/{id}/vote", user.AuthMiddleware(http.HandlerFunc(voteHandler.Vote))).Methods("POST")
+
+	r.Handle("/comments/{id}/vote", user.AuthMiddleware(http.HandlerFunc(commVoteHandler.Vote))).Methods("POST")
 
 	r.HandleFunc("/communities", commHandler.GetAll).Methods("GET")
 	r.HandleFunc("/communities/{id}/posts", postHandler.GetPostsByCommunity).Methods("GET")

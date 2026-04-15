@@ -16,7 +16,6 @@ export const useCommunityStore = create<CommunityState>((set, get) => ({
       const res = await api.get('/communities');
       const data = res.data;
       set({ communities: data || [] });
-      console.log(data);
     } catch (err) {
       console.error(err);
     }

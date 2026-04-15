@@ -12,6 +12,11 @@ interface CommentState {
   ) => Promise<void>;
   updateComment: (commentId: string, content: string) => Promise<void>;
   deleteComment: (commentId: string) => Promise<void>;
+  voteComment: (
+    postId: string,
+    commentId: string,
+    value: number,
+  ) => Promise<void>;
 }
 
 export const useCommentStore = create<CommentState>((set) => ({
@@ -23,7 +28,6 @@ export const useCommentStore = create<CommentState>((set) => ({
     try {
       const res = await api.get(`/posts/${postId}/comments`);
       set({ comments: res.data || [], isLoading: false });
-      console.log(res.data);
     } catch {
       set({ comments: [], isLoading: false });
     }
@@ -80,6 +84,23 @@ export const useCommentStore = create<CommentState>((set) => ({
     } catch (error) {
       console.error('Failed to delete comment:', error);
       throw error;
+    }
+  },
+
+  voteComment: async (postId: string, commentId: string, value: number) => {
+    try {
+      await api.post(`/comments/${commentId}/vote`, { value });
+
+      const res = await api.get(`/posts/${postId}/comments`);
+      const updatedComment = res.data;
+
+      set({
+        // comment: state.comment?.id === commentId ? updatedPost : state.comment,
+        comments: updatedComment,
+      });
+    } catch (err) {
+      console.error('Voting failed:', err);
+      throw err;
     }
   },
 }));

@@ -4,13 +4,14 @@ import CommentForm from '../commentForm/CommentForm';
 import { useAuthStore } from '../../store/authStore';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../confirmModal/ConfirmModal';
+import ArrowIcon from '../arrowIcon/ArrowIcon';
 
 interface TreeComment extends Comment {
   children?: TreeComment[];
 }
 
 const Comments = ({ postId }: { postId: string }) => {
-  const { comments, fetchComments, isLoading } = useCommentStore();
+  const { comments, fetchComments, voteComment, isLoading } = useCommentStore();
   const { user } = useAuthStore();
 
   useEffect(() => {
@@ -116,6 +117,41 @@ const Comments = ({ postId }: { postId: string }) => {
                 </p>
 
                 <div className="flex items-center gap-4 mt-2">
+                  {/* vote buttons */}
+                  <div className={`flex items-center gap-1 rounded-full w-fit`}>
+                    <button
+                      onClick={() =>
+                        voteComment(comment.post_id, comment.id, 1)
+                      }
+                      className={`hover:text-[#D93900] hover:bg-gray-300 p-2 rounded-full transition-colors cursor-pointer
+                        ${comment.rating > 0 ? 'text-[#D93900]' : 'text-gray-400'}`}
+                    >
+                      <ArrowIcon
+                        className="w-4 h-4"
+                        vote={comment.rating}
+                        left={true}
+                      />
+                    </button>
+
+                    <span className="text-base font-bold text-center my-1 text-gray-700">
+                      {comment?.rating}
+                    </span>
+
+                    <button
+                      onClick={() =>
+                        voteComment(comment.post_id, comment.id, -1)
+                      }
+                      className={`hover:text-[#6A5CFF] hover:bg-gray-300 p-2 rounded-full transition-colors cursor-pointer
+                        ${comment.rating < 0 ? 'text-[#523eff]' : 'text-gray-400'}`}
+                    >
+                      <ArrowIcon
+                        className="w-4 h-4 rotate-180"
+                        vote={comment.rating}
+                        left={false}
+                      />
+                    </button>
+                  </div>
+
                   <button
                     onClick={() => setIsReplying(!isReplying)}
                     className="text-xs font-bold text-gray-500 hover:bg-gray-100 px-2 py-1 rounded cursor-pointer"

@@ -1,4 +1,4 @@
-package vote
+package commentvote
 
 import (
 	"encoding/json"
@@ -18,7 +18,7 @@ func NewHandler(service *Service) *Handler {
 
 func (h *Handler) Vote(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	postID := vars["id"]
+	CommentID := vars["id"]
 
 	// Получаем ID пользователя из контекста (через AuthMiddleware)
 	userID, ok := r.Context().Value(user.UserIDKey).(string)
@@ -42,7 +42,7 @@ func (h *Handler) Vote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newRating, err := h.service.Vote(r.Context(), userID, postID, input.Value)
+	err := h.service.Vote(r.Context(), userID, CommentID, input.Value)
 	if err != nil {
 		http.Error(w, "failed to vote", http.StatusInternalServerError)
 		return
@@ -51,9 +51,8 @@ func (h *Handler) Vote(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	// w.Write([]byte(`{"status": "success"}`))
-	// json.NewEncoder(w).Encode(map[string]interface{}{
-	// 	"status":  "success",
-	// 	"post_id": postID,
-	// })
-	json.NewEncoder(w).Encode(map[string]int{"new_rating": newRating})
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"status":     "success",
+		"comment_id": CommentID,
+	})
 }
