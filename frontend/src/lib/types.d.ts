@@ -16,6 +16,7 @@ interface Post {
   community_id: string;
   created_at: string;
   rating: number;
+  user_vote;
 }
 
 interface Comment {

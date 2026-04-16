@@ -12,7 +12,8 @@ const Post = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const { post, fetchPost, deletePost, votePost, isLoading } = usePostStore();
+  const { post, fetchPost, deletePost, votePost, clearCurrentPost, isLoading } =
+    usePostStore();
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
@@ -22,8 +23,14 @@ const Post = () => {
   }, [user?.id, post?.author_id]);
 
   useEffect(() => {
+    // clearCurrentPost();
     if (id) fetchPost(id);
-  }, [id, fetchPost]);
+    // return () => clearCurrentPost();
+  }, [id, fetchPost, user]);
+
+  useEffect(() => {
+    return () => clearCurrentPost();
+  }, [clearCurrentPost]);
 
   const handleDelete = async () => {
     if (!post) return;
@@ -51,8 +58,33 @@ const Post = () => {
     navigate('/');
   };
 
-  if (isLoading && !post) return <div>Loading...</div>;
-  if (!post) return <div>Post not found</div>;
+  const handleVote = (postId: string, value: number) => {
+    if (!user) {
+      // Если юзер не залогинен
+      toast.error('Sign in to vote!', {
+        duration: 3000,
+        icon: '🔐',
+      });
+      // Тут можно вызвать открытие модалки логина, если она у тебя есть
+      return;
+    }
+
+    // Если залогинен — голосуем
+    votePost(postId, value);
+  };
+
+  if (isLoading)
+    return (
+      <div className="flex items-center justify-center min-h-[calc(100vh-56px-80px)]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
+      </div>
+    );
+  if (!post)
+    return (
+      <div className="flex items-center justify-center min-h-[calc(100vh-56px-80px)]">
+        Post not found
+      </div>
+    );
 
   return (
     <div className="w-full flex justify-center">
@@ -94,30 +126,34 @@ const Post = () => {
             {/* VOTE BUTTONS */}
             <div
               className={`flex items-center gap-1 rounded-full border border-gray-200 w-fit
-                ${post.rating < 0 ? 'bg-[#6A5CFF]' : post.rating === 0 ? 'bg-[#E5EBEE]' : 'bg-[#D93900]'}`}
+                ${post.user_vote === 1 ? 'bg-[#D93900]' : post.user_vote === -1 ? 'bg-[#6A5CFF]' : 'bg-[#E5EBEE]'}`}
             >
               <button
-                onClick={() => votePost(post.id, 1)}
-                className={`${post.rating === 0 ? 'hover:text-[#D93900]' : 'hover:text-white'} p-2 rounded-full transition-colors cursor-pointer
-                  ${post.rating > 0 ? 'hover:bg-[#ae2c00] text-white' : post.rating < 0 ? 'hover:bg-[#523eff] text-white' : 'hover:bg-gray-200 text-gray-400'}`}
+                onClick={() => handleVote(post.id, 1)}
+                className={`${post.user_vote === 0 ? 'hover:text-[#D93900]' : 'hover:text-white'} p-2 rounded-full transition-colors cursor-pointer
+                  ${post.user_vote === 1 ? 'hover:bg-[#ae2c00] text-white' : post.user_vote === -1 ? 'hover:bg-[#523eff] text-white' : 'hover:bg-gray-200 text-gray-400'}`}
               >
-                <ArrowIcon className="w-4 h-4" vote={post.rating} left={true} />
+                <ArrowIcon
+                  className="w-4 h-4"
+                  vote={post.user_vote}
+                  left={true}
+                />
               </button>
 
               <span
-                className={`text-base font-bold text-center my-1 ${post.rating === 0 ? 'text-gray-700' : 'text-white'}`}
+                className={`text-base font-bold text-center my-1 ${post.user_vote === 0 ? 'text-gray-600' : 'text-white'}`}
               >
                 {post?.rating}
               </span>
 
               <button
-                onClick={() => votePost(post.id, -1)}
-                className={`${post.rating === 0 ? 'hover:text-[#6A5CFF]' : 'hover:text-white'} p-2 rounded-full transition-colors cursor-pointer
-                  ${post.rating > 0 ? 'hover:bg-[#ae2c00] text-white' : post.rating < 0 ? 'hover:bg-[#523eff] text-white' : 'hover:bg-gray-200 text-gray-400'}`}
+                onClick={() => handleVote(post.id, -1)}
+                className={`${post.user_vote === 0 ? 'hover:text-[#6A5CFF]' : 'hover:text-white'} p-2 rounded-full transition-colors cursor-pointer
+                  ${post.user_vote === 1 ? 'hover:bg-[#ae2c00] text-white' : post.user_vote === -1 ? 'hover:bg-[#523eff] text-white' : 'hover:bg-gray-200 text-gray-400'}`}
               >
                 <ArrowIcon
                   className="w-4 h-4 rotate-180"
-                  vote={post.rating}
+                  vote={post.user_vote}
                   left={false}
                 />
               </button>

@@ -16,3 +16,6 @@ postgres_data/
 # Бинарники Go (если вдруг скомпилируешь локально)
 main
 *.exe
+
+frontend/src/store/postStore copy.ts
+frontend/src/store/postStore copy 2.ts

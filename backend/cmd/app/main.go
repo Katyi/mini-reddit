@@ -120,8 +120,9 @@ func main() {
 	r.HandleFunc("/test", test).Methods("GET")
 
 	// Настраиваем маршруты через роутер 'r'
-	r.HandleFunc("/posts", postHandler.GetAllPosts).Methods("GET")
-	r.HandleFunc("/posts/{id}", postHandler.GetPostByID).Methods("GET")
+	r.Handle("/posts", user.AuthMiddleware(http.HandlerFunc(postHandler.GetAllPosts))).Methods("GET")
+	r.Handle("/posts/{id}", user.AuthMiddleware(http.HandlerFunc(postHandler.GetPostByID))).Methods("GET")
+	r.Handle("/communities/{id}/posts", user.AuthMiddleware(http.HandlerFunc(postHandler.GetPostsByCommunity))).Methods("GET")
 	r.Handle("/posts", user.AuthMiddleware(http.HandlerFunc(postHandler.CreatePost))).Methods("POST")
 	r.Handle("/posts/{id}", user.AuthMiddleware(http.HandlerFunc(postHandler.UpdatePost))).Methods("PATCH")
 	r.Handle("/posts/{id}", user.AuthMiddleware(http.HandlerFunc(postHandler.DeletePost))).Methods("DELETE")
@@ -136,11 +137,9 @@ func main() {
 	r.Handle("/comments/{id}", user.AuthMiddleware(http.HandlerFunc(commentHandler.DeleteComment))).Methods("DELETE")
 
 	r.Handle("/posts/{id}/vote", user.AuthMiddleware(http.HandlerFunc(voteHandler.Vote))).Methods("POST")
-
 	r.Handle("/comments/{id}/vote", user.AuthMiddleware(http.HandlerFunc(commVoteHandler.Vote))).Methods("POST")
 
 	r.HandleFunc("/communities", commHandler.GetAll).Methods("GET")
-	r.HandleFunc("/communities/{id}/posts", postHandler.GetPostsByCommunity).Methods("GET")
 	r.HandleFunc("/communities/name/{name}", commHandler.GetByName).Methods("GET")
 	r.Handle("/communities", user.AuthMiddleware(http.HandlerFunc(commHandler.Create))).Methods("POST")
 	r.Handle("/communities/{id}", user.AuthMiddleware(http.HandlerFunc(commHandler.Update))).Methods("PATCH")

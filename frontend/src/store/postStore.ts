@@ -2,11 +2,15 @@ import { create } from 'zustand';
 import api from '../api/axios';
 import { useAuthStore } from './authStore';
 
+let voteDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
 interface PostState {
   posts: Post[];
   recentPosts: Post[];
   post: Post | null;
   isLoading: boolean;
+
+  clearCurrentPost: () => void;
   fetchPosts: (communityId?: string) => Promise<void>;
   fetchPost: (id: string) => Promise<void>;
   createPost: (
@@ -24,6 +28,10 @@ export const usePostStore = create<PostState>((set, get) => ({
   recentPosts: [],
   post: null,
   isLoading: false,
+
+  clearCurrentPost: () => {
+    set({ post: null });
+  },
 
   fetchPosts: async (communityId) => {
     set({ isLoading: true });
@@ -43,7 +51,8 @@ export const usePostStore = create<PostState>((set, get) => ({
   },
 
   fetchPost: async (id) => {
-    set({ isLoading: true });
+    if (!get().post) set({ isLoading: true });
+
     try {
       const url = `/posts/${id}`;
       const res = await api.get(url);
@@ -122,41 +131,65 @@ export const usePostStore = create<PostState>((set, get) => ({
     }));
   },
 
-  votePost: async (postId, value) => {
-    const state = get();
-    const currentPosts = state.posts;
-    const oldPost = currentPosts.find((p) => p.id === postId) || state.post;
+  votePost: async (postId, direction: number) => {
+    // Используем функциональный set, чтобы расчет всегда шел от актуального состояния
+    set((state) => {
+      const currentPosts = [...state.posts];
+      const postIdx = currentPosts.findIndex((p) => p.id === postId);
+      const targetPost = postIdx > -1 ? currentPosts[postIdx] : state.post;
 
-    if (!oldPost) return;
+      if (!targetPost || targetPost.id !== postId) return state;
 
-    // Сохраняем старое состояние на случай ошибки
-    const previousPosts = [...state.posts];
-    const previousCurrentPost = state.post ? { ...state.post } : null;
+      let newRating = targetPost.rating;
+      let newUserVote = 0;
 
-    try {
-      // 1. Вместо того чтобы просто плюсовать, мы можем сделать
-      // "мини-проверку" прямо здесь, если бы у нас было поле user_vote.
-      // Но так как его нет, давай просто доверять бэкенду,
-      // НО сделаем это быстро.
+      // ЛОГИКА: Считаем изменение на основе того, что УЖЕ в стейте
+      if (targetPost.user_vote === direction) {
+        // Отмена (кликнули по той же кнопке)
+        newRating -= direction;
+        newUserVote = 0;
+      } else {
+        // Новый голос или реверс (с -1 на 1)
+        const diff = targetPost.user_vote === 0 ? direction : direction * 2;
+        newRating += diff;
+        newUserVote = direction;
+      }
 
-      const res = await api.post(`/posts/${postId}/vote`, { value });
-      const serverRating = res.data.new_rating;
+      // Возвращаем обновленное состояние
+      const updatedPost = {
+        ...targetPost,
+        rating: newRating,
+        user_vote: newUserVote,
+      };
 
-      // 2. Обновляем состояние ТОЛЬКО после ответа,
-      // но так как бэк теперь быстрый, задержки не будет.
-      set((state) => ({
-        posts: state.posts.map((p) =>
-          p.id === postId ? { ...p, rating: serverRating } : p,
-        ),
-        post:
-          state.post?.id === postId
-            ? { ...state.post, rating: serverRating }
-            : state.post,
-      }));
-    } catch (err) {
-      console.error(err);
-      // Возвращаем старые данные при ошибке
-      set({ posts: previousPosts, post: previousCurrentPost });
-    }
+      return {
+        posts:
+          postIdx > -1
+            ? currentPosts.map((p, i) => (i === postIdx ? updatedPost : p))
+            : state.posts,
+        post: state.post?.id === postId ? updatedPost : state.post,
+      };
+    });
+
+    // ДЕБАУНС ЗАПРОСА (отправляем только финальный результат на сервер)
+    if (voteDebounceTimer) clearTimeout(voteDebounceTimer);
+
+    voteDebounceTimer = setTimeout(async () => {
+      try {
+        // Берем то, что получилось в итоге всех кликов
+        const finalState =
+          get().posts.find((p) => p.id === postId) || get().post;
+        if (!finalState) return;
+
+        // Отправляем текущий user_vote (который может быть 0, 1 или -1)
+        // ВАЖНО: Твоему бэкенду может понадобиться правка, чтобы он понимал "0" как удаление голоса
+        await api.post(`/posts/${postId}/vote`, {
+          value: finalState.user_vote,
+        });
+      } catch (err) {
+        console.error('Server sync failed', err);
+        // Тут можно вызвать fetchPost(postId) для принудительной синхронизации при ошибке
+      }
+    }, 500);
   },
 }));

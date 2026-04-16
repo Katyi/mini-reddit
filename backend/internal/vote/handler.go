@@ -37,8 +37,8 @@ func (h *Handler) Vote(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Валидация: разрешаем только 1 и -1
-	if input.Value != 1 && input.Value != -1 {
-		http.Error(w, "value must be 1 or -1", http.StatusBadRequest)
+	if input.Value != 1 && input.Value != -1 && input.Value != 0 {
+		http.Error(w, "value must be 1 or -1 or 0", http.StatusBadRequest)
 		return
 	}
 
@@ -50,10 +50,5 @@ func (h *Handler) Vote(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	// w.Write([]byte(`{"status": "success"}`))
-	// json.NewEncoder(w).Encode(map[string]interface{}{
-	// 	"status":  "success",
-	// 	"post_id": postID,
-	// })
 	json.NewEncoder(w).Encode(map[string]int{"new_rating": newRating})
 }

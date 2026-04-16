@@ -15,42 +15,34 @@ const UserIDKey contextKey = "userID"
 
 func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// 1. Берем заголовок Authorization
 		authHeader := r.Header.Get("Authorization")
+
+		// Если гость (нет заголовка) — просто пропускаем к хендлеру
 		if authHeader == "" {
-			http.Error(w, "Missing authorization header", http.StatusUnauthorized)
+			next.ServeHTTP(w, r)
 			return
 		}
 
-		// 2. Обычно заголовок выглядит так: "Bearer <token>"
+		// Если пытается косить под юзера (заголовок есть), но формат битый — ошибка
 		parts := strings.Split(authHeader, " ")
 		if len(parts) != 2 || parts[0] != "Bearer" {
-			http.Error(w, "Invalid authorization header format", http.StatusUnauthorized)
+			http.Error(w, "Invalid token format", http.StatusUnauthorized)
 			return
 		}
 
-		tokenString := parts[1]
-
-		// 3. Проверяем токен
-		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-			return jwtSecret, nil // Тот самый ключ из твоего service.go
+		token, err := jwt.Parse(parts[1], func(token *jwt.Token) (interface{}, error) {
+			return jwtSecret, nil
 		})
 
+		// Если токен есть, но он просрочен/плохой — ошибка
 		if err != nil || !token.Valid {
-			http.Error(w, "Invalid token", http.StatusUnauthorized)
+			http.Error(w, "Session expired", http.StatusUnauthorized)
 			return
 		}
 
-		// 4. Достаем userID из токена (поле "sub")
-		claims, ok := token.Claims.(jwt.MapClaims)
-		if !ok {
-			http.Error(w, "Invalid token claims", http.StatusUnauthorized)
-			return
-		}
-
-		userID := claims["sub"].(string)
-
-		// 5. Кладем userID в "контекст" запроса, чтобы Handler мог его достать
+		// Если всё ок — пишем ID в контекст
+		claims, _ := token.Claims.(jwt.MapClaims)
+		userID, _ := claims["sub"].(string)
 		ctx := context.WithValue(r.Context(), UserIDKey, userID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})

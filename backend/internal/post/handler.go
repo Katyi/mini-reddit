@@ -46,24 +46,27 @@ func (h *Handler) CreatePost(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) GetAllPosts(w http.ResponseWriter, r *http.Request) {
-	posts, err := h.service.GetAllPosts(r.Context())
+	userID, _ := r.Context().Value(user.UserIDKey).(string)
+
+	posts, err := h.service.GetAllPosts(r.Context(), userID)
 	if err != nil {
 		http.Error(w, "failed to fetch posts", http.StatusInternalServerError)
 		return
 	}
+
 	w.Header().Set("Content-Type", "application/json")
+	if posts == nil {
+		posts = []Post{}
+	}
 	json.NewEncoder(w).Encode(posts)
 }
 
 func (h *Handler) GetPostByID(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
-	// if err != nil {
-	// 	http.Error(w, "invalid id format", http.StatusBadRequest)
-	// 	return
-	// }
+	userID, _ := r.Context().Value(user.UserIDKey).(string)
 
-	post, err := h.service.GetPostByID(r.Context(), id)
+	post, err := h.service.GetPostByID(r.Context(), id, userID)
 	if err != nil {
 		http.Error(w, "post not found", http.StatusNotFound)
 		return
@@ -131,7 +134,8 @@ func (h *Handler) GetPostsByCommunity(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	communityID := vars["id"]
 
-	posts, err := h.service.GetPostsByCommunity(r.Context(), communityID)
+	userID, _ := r.Context().Value(user.UserIDKey).(string)
+	posts, err := h.service.GetPostsByCommunity(r.Context(), communityID, userID)
 	if err != nil {
 		http.Error(w, "failed to fetch posts", http.StatusInternalServerError)
 		return

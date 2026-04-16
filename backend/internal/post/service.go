@@ -17,16 +17,16 @@ func (s *Service) CreatePost(ctx context.Context, title, content string, authorI
 	return s.repo.Create(ctx, Post{Title: title, Content: content, AuthorID: authorID, CommunityID: communityID})
 }
 
-func (s *Service) GetAllPosts(ctx context.Context) ([]Post, error) {
-	return s.repo.GetAll(ctx)
+func (s *Service) GetAllPosts(ctx context.Context, userID string) ([]Post, error) {
+	return s.repo.GetAll(ctx, userID)
 }
 
-func (s *Service) GetPostByID(ctx context.Context, id string) (Post, error) {
-	return s.repo.GetByID(ctx, id) // Передаем id правильно
+func (s *Service) GetPostByID(ctx context.Context, id string, userID string) (Post, error) {
+	return s.repo.GetByID(ctx, id, userID) // Передаем id правильно
 }
 
 func (s *Service) UpdatePost(ctx context.Context, id string, title, content string, requesterID string) (Post, error) {
-	post, err := s.repo.GetByID(ctx, id)
+	post, err := s.repo.GetByID(ctx, id, requesterID)
 	if err != nil {
 		return Post{}, err
 	}
@@ -39,7 +39,7 @@ func (s *Service) UpdatePost(ctx context.Context, id string, title, content stri
 }
 
 func (s *Service) DeletePost(ctx context.Context, id string, requesterID string) error {
-	post, err := s.repo.GetByID(ctx, id)
+	post, err := s.repo.GetByID(ctx, id, requesterID)
 	if err != nil {
 		return err
 	}
@@ -51,6 +51,6 @@ func (s *Service) DeletePost(ctx context.Context, id string, requesterID string)
 	return s.repo.Delete(ctx, id)
 }
 
-func (s *Service) GetPostsByCommunity(ctx context.Context, communityID string) ([]Post, error) {
-	return s.repo.GetByCommunityID(ctx, communityID)
+func (s *Service) GetPostsByCommunity(ctx context.Context, communityID string, userID string) ([]Post, error) {
+	return s.repo.GetByCommunityID(ctx, communityID, userID)
 }
