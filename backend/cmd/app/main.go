@@ -87,7 +87,7 @@ func main() {
 	userHandler := user.NewHandler(userService)
 
 	//Для комментариев
-	commentRepo := comment.NewRepository(dbpool)
+	commentRepo := comment.NewRepository(dbpool, rdb)
 	commentService := comment.NewService(commentRepo)
 	commentHandler := comment.NewHandler(commentService)
 
@@ -131,7 +131,7 @@ func main() {
 	r.HandleFunc("/login", userHandler.Login).Methods("POST")
 	r.HandleFunc("/refresh", userHandler.RefreshToken).Methods("POST")
 
-	r.HandleFunc("/posts/{id}/comments", commentHandler.GetCommentsByPost).Methods("GET")
+	r.Handle("/posts/{id}/comments", user.AuthMiddleware(http.HandlerFunc(commentHandler.GetCommentsByPost))).Methods("GET")
 	r.Handle("/posts/{id}/comments", user.AuthMiddleware(http.HandlerFunc(commentHandler.CreateComment))).Methods("POST")
 	r.Handle("/comments/{id}", user.AuthMiddleware(http.HandlerFunc(commentHandler.UpdateComment))).Methods("PATCH")
 	r.Handle("/comments/{id}", user.AuthMiddleware(http.HandlerFunc(commentHandler.DeleteComment))).Methods("DELETE")

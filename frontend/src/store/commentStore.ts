@@ -1,9 +1,13 @@
 import { create } from 'zustand';
 import api from '../api/axios';
 
+let voteDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
 interface CommentState {
   comments: Comment[];
   isLoading: boolean;
+
+  clearComments: () => void;
   fetchComments: (postId: string) => Promise<void>;
   createComment: (
     postId: string,
@@ -19,9 +23,13 @@ interface CommentState {
   ) => Promise<void>;
 }
 
-export const useCommentStore = create<CommentState>((set) => ({
+export const useCommentStore = create<CommentState>((set, get) => ({
   comments: [],
   isLoading: false,
+
+  clearComments: () => {
+    set({ comments: [] });
+  },
 
   fetchComments: async (postId) => {
     set({ isLoading: true });
@@ -66,9 +74,6 @@ export const useCommentStore = create<CommentState>((set) => ({
   deleteComment: async (commentId) => {
     try {
       await api.delete(`/comments/${commentId}`);
-      // set((state) => ({
-      //   comments: state.comments.filter((c) => c.id !== commentId),
-      // }));
       set((state) => ({
         comments: state.comments.map((c) =>
           c.id === commentId
@@ -87,20 +92,59 @@ export const useCommentStore = create<CommentState>((set) => ({
     }
   },
 
-  voteComment: async (postId: string, commentId: string, value: number) => {
-    try {
-      await api.post(`/comments/${commentId}/vote`, { value });
+  voteComment: async (postId: string, commentId: string, direction: number) => {
+    // 1. Мгновенно обновляем UI (Optimistic Update)
+    set((state) => {
+      const currentComments = [...state.comments];
+      const commentIdx = currentComments.findIndex((c) => c.id === commentId);
 
-      const res = await api.get(`/posts/${postId}/comments`);
-      const updatedComment = res.data;
+      if (commentIdx === -1) return state;
 
-      set({
-        // comment: state.comment?.id === commentId ? updatedPost : state.comment,
-        comments: updatedComment,
-      });
-    } catch (err) {
-      console.error('Voting failed:', err);
-      throw err;
-    }
+      const target = currentComments[commentIdx];
+      let newRating = target.rating;
+      let newUserVote = target.user_vote;
+
+      if (target.user_vote === direction) {
+        // Отмена голоса (повторный клик)
+        newRating -= direction;
+        newUserVote = 0;
+      } else {
+        // Новый голос или смена (-1 на 1)
+        const diff = target.user_vote === 0 ? direction : direction * 2;
+        newRating += diff;
+        newUserVote = direction;
+      }
+
+      currentComments[commentIdx] = {
+        ...target,
+        rating: newRating,
+        user_vote: newUserVote,
+      };
+
+      return { comments: currentComments };
+    });
+
+    // 2. Дебаунс запроса на сервер
+    if (voteDebounceTimer) clearTimeout(voteDebounceTimer);
+
+    voteDebounceTimer = setTimeout(async () => {
+      try {
+        // Берем финальное состояние из стора после всех кликов
+        const finalComment = get().comments.find((c) => c.id === commentId);
+        if (!finalComment) return;
+
+        // Отправляем на бэкенд (теперь он понимает 0, 1, -1)
+        await api.post(`/comments/${commentId}/vote`, {
+          value: finalComment.user_vote,
+        });
+
+        // Опционально: можно не перекачивать все комменты,
+        // так как наш UI уже совпадает с тем, что в базе.
+      } catch (error) {
+        console.error('Failed to sync comment vote:', error);
+        // В случае ошибки лучше перекачать данные, чтобы сбросить UI к реальности
+        get().fetchComments(postId);
+      }
+    }, 500);
   },
 }));

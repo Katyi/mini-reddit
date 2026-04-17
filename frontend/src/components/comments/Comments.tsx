@@ -11,12 +11,14 @@ interface TreeComment extends Comment {
 }
 
 const Comments = ({ postId }: { postId: string }) => {
-  const { comments, fetchComments, voteComment, isLoading } = useCommentStore();
+  const { comments, fetchComments, voteComment, clearComments, isLoading } =
+    useCommentStore();
   const { user } = useAuthStore();
 
   useEffect(() => {
     if (postId) fetchComments(postId);
-  }, [postId, fetchComments]);
+    return () => clearComments();
+  }, [postId, fetchComments, user?.id, clearComments]);
 
   const commentTree = useMemo(() => {
     const map: { [key: string]: TreeComment } = {};
@@ -50,11 +52,8 @@ const Comments = ({ postId }: { postId: string }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const { deleteComment } = useCommentStore();
-    // const { user } = useAuthStore();
 
-    // const isAuthor = user && String(user.id) === String(comment.author_id);
     const isDeleted = comment.content === '[deleted]'; // Условие, что коммент удален
-    // const isAuthor = user?.id === comment.author_id;
     const isAuthor = user?.id === comment.author_id && !isDeleted;
 
     const handleDelete = async () => {
@@ -68,12 +67,26 @@ const Comments = ({ postId }: { postId: string }) => {
       // }
     };
 
+    const handleVote = (postId: string, commentIdL: string, value: number) => {
+      if (!user) {
+        // Если юзер не залогинен
+        toast.error('Sign in to vote!', {
+          duration: 3000,
+          icon: '🔐',
+        });
+        // Тут можно вызвать открытие модалки логина, если она у тебя есть
+        return;
+      }
+
+      // Если залогинен — голосуем
+      voteComment(postId, commentIdL, value);
+    };
+
     return (
       <div
         className={`mt-4 ${depth > 0 ? 'ml-6 border-l-2 border-gray-100 pl-4' : ''}`}
       >
         <div className="flex gap-3">
-          {/* <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-yellow-400 flex-shrink-0" /> */}
           {/* Аватарку можно сделать серой для удаленных */}
           <div
             className={`w-8 h-8 rounded-full flex-shrink-0 ${
@@ -85,7 +98,6 @@ const Comments = ({ postId }: { postId: string }) => {
 
           <div className="flex flex-col w-full">
             <div className="flex items-center gap-2">
-              {/* <span className="font-semibold text-sm text-gray-900"> */}
               <span
                 className={`text-sm font-semibold ${isDeleted ? 'text-gray-400' : 'text-gray-900'}`}
               >
@@ -107,7 +119,6 @@ const Comments = ({ postId }: { postId: string }) => {
               />
             ) : (
               <>
-                {/* <p className="text-gray-800 mt-1 text-sm leading-relaxed"> */}
                 <p
                   className={`mt-1 text-sm leading-relaxed ${
                     isDeleted ? 'text-gray-400 italic' : 'text-gray-800'
@@ -116,66 +127,70 @@ const Comments = ({ postId }: { postId: string }) => {
                   {comment.content}
                 </p>
 
-                <div className="flex items-center gap-4 mt-2">
-                  {/* vote buttons */}
-                  <div className={`flex items-center gap-1 rounded-full w-fit`}>
-                    <button
-                      onClick={() =>
-                        voteComment(comment.post_id, comment.id, 1)
-                      }
-                      className={`hover:text-[#D93900] hover:bg-gray-300 p-2 rounded-full transition-colors cursor-pointer
-                        ${comment.rating > 0 ? 'text-[#D93900]' : 'text-gray-400'}`}
+                {!isDeleted && (
+                  <div className="flex items-center gap-4 mt-2">
+                    {/* VOTE BUTTONS */}
+                    <div
+                      className={`flex items-center gap-1 rounded-full w-fit`}
                     >
-                      <ArrowIcon
-                        className="w-4 h-4"
-                        vote={comment.rating}
-                        left={true}
-                      />
+                      <button
+                        onClick={() =>
+                          handleVote(comment.post_id, comment.id, 1)
+                        }
+                        className={`hover:text-[#D93900] hover:bg-gray-300 p-2 rounded-full transition-colors cursor-pointer
+                        ${comment.user_vote === 1 ? 'text-[#D93900]' : 'text-gray-400'}`}
+                      >
+                        <ArrowIcon
+                          className="w-4 h-4"
+                          vote={comment.user_vote}
+                          left={true}
+                        />
+                      </button>
+
+                      <span className="text-base font-bold text-center my-1 text-gray-700">
+                        {comment?.rating}
+                      </span>
+
+                      <button
+                        onClick={() =>
+                          handleVote(comment.post_id, comment.id, -1)
+                        }
+                        className={`hover:text-[#6A5CFF] hover:bg-gray-300 p-2 rounded-full transition-colors cursor-pointer
+                        ${comment.user_vote < 0 ? 'text-[#523eff]' : 'text-gray-400'}`}
+                      >
+                        <ArrowIcon
+                          className="w-4 h-4 rotate-180"
+                          vote={comment.user_vote}
+                          left={false}
+                        />
+                      </button>
+                    </div>
+
+                    <button
+                      onClick={() => setIsReplying(!isReplying)}
+                      className="text-xs font-bold text-gray-500 hover:bg-gray-100 px-2 py-1 rounded cursor-pointer"
+                    >
+                      Reply
                     </button>
 
-                    <span className="text-base font-bold text-center my-1 text-gray-700">
-                      {comment?.rating}
-                    </span>
-
-                    <button
-                      onClick={() =>
-                        voteComment(comment.post_id, comment.id, -1)
-                      }
-                      className={`hover:text-[#6A5CFF] hover:bg-gray-300 p-2 rounded-full transition-colors cursor-pointer
-                        ${comment.rating < 0 ? 'text-[#523eff]' : 'text-gray-400'}`}
-                    >
-                      <ArrowIcon
-                        className="w-4 h-4 rotate-180"
-                        vote={comment.rating}
-                        left={false}
-                      />
-                    </button>
+                    {isAuthor && (
+                      <>
+                        <button
+                          onClick={() => setIsEditing(true)}
+                          className="text-xs font-bold text-gray-500 hover:bg-gray-100 px-2 py-1 rounded cursor-pointer"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => setIsDeleteModalOpen(true)}
+                          className="text-xs font-bold text-red-400 hover:bg-red-50 px-2 py-1 rounded cursor-pointer"
+                        >
+                          Delete
+                        </button>
+                      </>
+                    )}
                   </div>
-
-                  <button
-                    onClick={() => setIsReplying(!isReplying)}
-                    className="text-xs font-bold text-gray-500 hover:bg-gray-100 px-2 py-1 rounded cursor-pointer"
-                  >
-                    Reply
-                  </button>
-
-                  {isAuthor && (
-                    <>
-                      <button
-                        onClick={() => setIsEditing(true)}
-                        className="text-xs font-bold text-gray-500 hover:bg-gray-100 px-2 py-1 rounded cursor-pointer"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => setIsDeleteModalOpen(true)}
-                        className="text-xs font-bold text-red-400 hover:bg-red-50 px-2 py-1 rounded cursor-pointer"
-                      >
-                        Delete
-                      </button>
-                    </>
-                  )}
-                </div>
+                )}
               </>
             )}
 

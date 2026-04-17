@@ -18,8 +18,8 @@ func (s *Service) CreateComment(ctx context.Context, content string, authorID st
 	return s.repo.Create(ctx, Comment{Content: content, AuthorID: authorID, PostID: postID, ParentID: parentID})
 }
 
-func (s *Service) GetCommentsByPostID(ctx context.Context, postId string) ([]Comment, error) {
-	return s.repo.GetByPostID(ctx, postId)
+func (s *Service) GetCommentsByPostID(ctx context.Context, postId string, userId string) ([]Comment, error) {
+	return s.repo.GetByPostID(ctx, postId, userId)
 }
 
 func (s *Service) DeleteComment(ctx context.Context, commentID string, requesterID string) error {
@@ -48,11 +48,12 @@ func (s *Service) UpdateComment(ctx context.Context, commentID string, content s
 		return Comment{}, errors.New("you are not the author of this post")
 	}
 
-	err = s.repo.Update(ctx, commentID, content)
+	updatedComment, err := s.repo.Update(ctx, commentID, content)
+	// err = s.repo.Update(ctx, commentID, content)
 	if err != nil {
 		return Comment{}, err
 	}
 
-	c.Content = content
-	return c, nil
+	// c.Content = content
+	return updatedComment, nil
 }

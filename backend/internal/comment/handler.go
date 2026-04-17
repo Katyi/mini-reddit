@@ -52,7 +52,9 @@ func (h *Handler) GetCommentsByPost(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	postID := vars["id"]
 
-	comments, err := h.service.GetCommentsByPostID(r.Context(), postID)
+	userID, _ := r.Context().Value(user.UserIDKey).(string)
+
+	comments, err := h.service.GetCommentsByPostID(r.Context(), postID, userID)
 	if err != nil {
 		http.Error(w, "failed to fetch comments", http.StatusInternalServerError)
 		return

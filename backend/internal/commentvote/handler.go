@@ -2,6 +2,7 @@ package commentvote
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/Katyi/mini-reddit/backend/internal/user"
@@ -28,7 +29,7 @@ func (h *Handler) Vote(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var input struct {
-		Value int `json:"value"` // Ждем 1 или -1
+		Value int `json:"value"` // Ждем 1 или -1 или 0
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -37,13 +38,14 @@ func (h *Handler) Vote(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Валидация: разрешаем только 1 и -1
-	if input.Value != 1 && input.Value != -1 {
-		http.Error(w, "value must be 1 or -1", http.StatusBadRequest)
+	if input.Value != 1 && input.Value != -1 && input.Value != 0 {
+		http.Error(w, "value must be 1 or -1 or 0", http.StatusBadRequest)
 		return
 	}
 
 	err := h.service.Vote(r.Context(), userID, CommentID, input.Value)
 	if err != nil {
+		fmt.Printf("VOTING ERROR: %v\n", err)
 		http.Error(w, "failed to vote", http.StatusInternalServerError)
 		return
 	}

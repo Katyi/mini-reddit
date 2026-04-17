@@ -16,7 +16,7 @@ interface Post {
   community_id: string;
   created_at: string;
   rating: number;
-  user_vote;
+  user_vote: number;
 }
 
 interface Comment {
@@ -28,6 +28,7 @@ interface Comment {
   content: string;
   created_at: string;
   rating: number;
+  user_vote: number;
 }
 
 interface User {

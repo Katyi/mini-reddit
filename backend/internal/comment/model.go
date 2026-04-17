@@ -11,4 +11,5 @@ type Comment struct {
 	Content        string    `json:"content"`
 	CreatedAt      time.Time `json:"created_at"`
 	Rating         int       `json:"rating"`
+	UserVote       int       `json:"user_vote"`
 }
