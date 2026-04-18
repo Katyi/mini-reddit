@@ -8,30 +8,80 @@ import CommunityModal from '../../components/communityModal/CommunityModal';
 import PostList from '../../components/postList/PostList';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../../components/confirmModal/ConfirmModal'; // Импортируй свою новую модалку
+import { useDebounce } from '../../hooks/useDebounce';
+import Select from '../../components/select/Select';
+
+const sortOptions = [
+  { label: 'Newest', value: 'new' },
+  { label: 'Top Rated', value: 'top' },
+];
 
 const Home = () => {
   const navigate = useNavigate();
   const { communityName } = useParams();
-  const { isLoading, fetchPosts, recentPosts } = usePostStore();
+  const {
+    isLoading,
+    fetchPosts,
+    recentPosts,
+    hasMore,
+    searchQuery,
+    resetPosts,
+  } = usePostStore();
   const { communities, deleteCommunity } = useCommunityStore();
   const { user } = useAuthStore();
-  const currentCommunity = communities.find((c) => c.name === communityName);
+
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
   const [communityToDelete, setCommunityToDelete] = useState<string | null>(
     null,
   );
 
+  const [sort, setSort] = useState('new');
+  const [page, setPage] = useState<number>(1);
+  const [isSelectOpen, setIsSelectOpen] = useState(false);
+
+  const currentSortLabel =
+    sortOptions.find((o) => o.value === sort)?.label || 'Newest';
+
+  const debouncedSearch = useDebounce(searchQuery, 500);
+
+  const currentCommunity = communities.find((c) => c.name === communityName);
+
   useEffect(() => {
-    if (communityName) {
-      // Ждем, пока communities загрузятся (если они еще пустые)
-      if (currentCommunity) {
-        fetchPosts(currentCommunity.id.toString());
-      }
-    } else {
-      fetchPosts();
-    }
-  }, [communityName, currentCommunity, fetchPosts]);
+    const commId = currentCommunity?.id.toString();
+    resetPosts();
+    fetchPosts({
+      communityId: commId,
+      search: debouncedSearch,
+      sort,
+      page: 1,
+      append: false,
+    }).then(() => setPage(1));
+  }, [
+    communityName,
+    currentCommunity?.id,
+    debouncedSearch,
+    sort,
+    fetchPosts,
+    resetPosts,
+  ]);
+
+  const handleSortChange = (val: string) => {
+    setSort(val);
+    setPage(1); // Сбрасываем страницу при смене сортировки
+  };
+
+  const loadMore = () => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchPosts({
+      communityId: currentCommunity?.id.toString(),
+      search: debouncedSearch,
+      sort,
+      page: nextPage,
+      append: true,
+    });
+  };
 
   const openDeleteConfirm = (id: string) => {
     setCommunityToDelete(id);
@@ -68,6 +118,16 @@ const Home = () => {
         {/* Центральная лента: занимает 8 колонок из 12 на больших экранах */}
         <section className="lg:col-span-8 space-y-4 w-full">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 min-h-125">
+            {/* SORT */}
+            <Select
+              options={sortOptions}
+              selectedLabel={currentSortLabel}
+              onChange={handleSortChange}
+              open={isSelectOpen}
+              setOpen={setIsSelectOpen}
+              className="min-w-[120px] md:min-w-[150px] mb-6"
+            />
+
             {/* Шапка сообщества */}
             {currentCommunity && (
               <div className="bg-white rounded-xl border border-gray-100 overflow-hidden mb-6">
@@ -120,6 +180,18 @@ const Home = () => {
             )}
 
             <PostList />
+
+            {/* PAGINATION BUTTON */}
+            {hasMore && !isLoading && (
+              <button
+                onClick={loadMore}
+                disabled={isLoading}
+                className="w-full mt-6 py-3 bg-white border border-gray-200 rounded-xl font-bold text-gray-600 
+                        hover:border-orange-500 hover:text-orange-500 transition-all disabled:opacity-50 cursor-pointer"
+              >
+                Show More
+              </button>
+            )}
           </div>
         </section>
 

@@ -3,6 +3,7 @@ package post
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/Katyi/mini-reddit/backend/internal/user"
 	"github.com/gorilla/mux"
@@ -17,7 +18,6 @@ func NewHandler(service *Service) *Handler {
 }
 
 func (h *Handler) CreatePost(w http.ResponseWriter, r *http.Request) {
-	// var input Post
 	var input struct {
 		Title       string `json:"title"`
 		Content     string `json:"content"`
@@ -46,9 +46,25 @@ func (h *Handler) CreatePost(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) GetAllPosts(w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query()
+	search := query.Get("search")
+	sortBy := query.Get("sort") // "new" или "top"
+
+	page, _ := strconv.Atoi(query.Get("page"))
+	if page < 1 {
+		page = 1
+	}
+
+	limit, _ := strconv.Atoi(query.Get("limit"))
+	if limit < 1 || limit > 50 {
+		limit = 10
+	} // ограничиваем максимум
+
+	offset := (page - 1) * limit
+
 	userID, _ := r.Context().Value(user.UserIDKey).(string)
 
-	posts, err := h.service.GetAllPosts(r.Context(), userID)
+	posts, err := h.service.GetAllPosts(r.Context(), userID, search, sortBy, limit, offset)
 	if err != nil {
 		http.Error(w, "failed to fetch posts", http.StatusInternalServerError)
 		return
@@ -134,13 +150,31 @@ func (h *Handler) GetPostsByCommunity(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	communityID := vars["id"]
 
+	query := r.URL.Query()
+	search := query.Get("search")
+	sortBy := query.Get("sort")
+
+	page, _ := strconv.Atoi(query.Get("page"))
+	if page < 1 {
+		page = 1
+	}
+	limit, _ := strconv.Atoi(query.Get("limit"))
+	if limit < 1 || limit > 50 {
+		limit = 10
+	}
+	offset := (page - 1) * limit
+
 	userID, _ := r.Context().Value(user.UserIDKey).(string)
-	posts, err := h.service.GetPostsByCommunity(r.Context(), communityID, userID)
+
+	posts, err := h.service.GetPostsByCommunity(r.Context(), communityID, userID, search, sortBy, limit, offset)
 	if err != nil {
 		http.Error(w, "failed to fetch posts", http.StatusInternalServerError)
 		return
 	}
 
+	if posts == nil {
+		posts = []Post{}
+	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(posts)
 }

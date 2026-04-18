@@ -17,12 +17,12 @@ func (s *Service) CreatePost(ctx context.Context, title, content string, authorI
 	return s.repo.Create(ctx, Post{Title: title, Content: content, AuthorID: authorID, CommunityID: communityID})
 }
 
-func (s *Service) GetAllPosts(ctx context.Context, userID string) ([]Post, error) {
-	return s.repo.GetAll(ctx, userID)
+func (s *Service) GetAllPosts(ctx context.Context, userID string, search string, sortBy string, limit, offset int) ([]Post, error) {
+	return s.repo.GetAll(ctx, userID, search, sortBy, limit, offset)
 }
 
 func (s *Service) GetPostByID(ctx context.Context, id string, userID string) (Post, error) {
-	return s.repo.GetByID(ctx, id, userID) // Передаем id правильно
+	return s.repo.GetByID(ctx, id, userID)
 }
 
 func (s *Service) UpdatePost(ctx context.Context, id string, title, content string, requesterID string) (Post, error) {
@@ -51,6 +51,6 @@ func (s *Service) DeletePost(ctx context.Context, id string, requesterID string)
 	return s.repo.Delete(ctx, id)
 }
 
-func (s *Service) GetPostsByCommunity(ctx context.Context, communityID string, userID string) ([]Post, error) {
-	return s.repo.GetByCommunityID(ctx, communityID, userID)
+func (s *Service) GetPostsByCommunity(ctx context.Context, communityID string, userID string, search string, sortBy string, limit, offset int) ([]Post, error) {
+	return s.repo.GetByCommunityID(ctx, communityID, userID, search, sortBy, limit, offset)
 }

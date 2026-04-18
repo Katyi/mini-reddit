@@ -1,9 +1,10 @@
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import burger from '../../assets/icons/burger.svg';
 import addIcon from '../../assets/icons/addIcon.svg';
 import { useAuthStore } from '../../store/authStore';
 import { useState } from 'react';
 import PostModal from '../postModal/PostModal';
+import { usePostStore } from '../../store/postStore';
 
 interface HeaderProps {
   isSidebarOpen: boolean;
@@ -11,7 +12,9 @@ interface HeaderProps {
 }
 
 const Header = ({ isSidebarOpen, toggleSidebar }: HeaderProps) => {
+  const { communityName } = useParams();
   const { user, openModal, logout } = useAuthStore();
+  const { searchQuery, setSearchQuery } = usePostStore();
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
 
   return (
@@ -33,6 +36,20 @@ const Header = ({ isSidebarOpen, toggleSidebar }: HeaderProps) => {
         </Link>
       </div>
 
+      {/* SEARCH INPUT */}
+      <div className="max-w-md w-full relative hidden md:block">
+        <input
+          type="text"
+          placeholder={`Search in ${communityName ? 'r/' + communityName : 'all posts'}...`}
+          className="w-full pl-10 pr-4 py-1.5 bg-gray-100 border-none rounded-full text-sm focus:ring-2 outline-none
+          focus:ring-orange-500 transition-all"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+        <span className="absolute left-3 top-1.5 text-gray-400">🔍</span>
+      </div>
+
+      {/* RIGHT SIDE WITH CREATE USERNAME LOGOUT LOGIN... */}
       <div className="flex items-center gap-2">
         {user ? (
           <div className="flex items-center gap-1.5">

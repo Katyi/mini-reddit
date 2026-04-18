@@ -9,9 +9,19 @@ interface PostState {
   recentPosts: Post[];
   post: Post | null;
   isLoading: boolean;
+  hasMore: boolean;
+  searchQuery: string;
 
+  resetPosts: () => void;
+  setSearchQuery: (query: string) => void;
   clearCurrentPost: () => void;
-  fetchPosts: (communityId?: string) => Promise<void>;
+  fetchPosts: (params?: {
+    communityId?: string;
+    search?: string;
+    sort?: string;
+    page?: number;
+    append?: boolean;
+  }) => Promise<void>;
   fetchPost: (id: string) => Promise<void>;
   createPost: (
     title: string,
@@ -28,25 +38,56 @@ export const usePostStore = create<PostState>((set, get) => ({
   recentPosts: [],
   post: null,
   isLoading: false,
+  hasMore: true,
+  searchQuery: '',
+
+  resetPosts: () => {
+    set({
+      posts: [],
+      hasMore: true,
+      isLoading: false, // опционально
+    });
+  },
+
+  setSearchQuery: (query) => set({ searchQuery: query }),
 
   clearCurrentPost: () => {
     set({ post: null });
   },
 
-  fetchPosts: async (communityId) => {
+  fetchPosts: async ({
+    communityId,
+    search = '',
+    sort = 'new',
+    page = 1,
+    append = false,
+  } = {}) => {
     set({ isLoading: true });
     try {
-      const res = communityId
-        ? await api.get(`/communities/${communityId}/posts`)
-        : await api.get('/posts');
-      const data = res.data;
-      set({
-        posts: data || [],
-        isLoading: false,
-        recentPosts: data.slice(0, 5),
+      const limit = 50; // LIMIT FOR PAGE
+      const baseUrl = communityId
+        ? `/communities/${communityId}/posts`
+        : '/posts';
+      const res = await api.get(baseUrl, {
+        params: { search, sort, page, limit },
       });
-    } catch {
-      set({ posts: [], recentPosts: [], isLoading: false });
+
+      const newPosts = res.data || [];
+      set((state) => ({
+        posts: append ? [...state.posts, ...newPosts] : newPosts,
+        // Если пришло меньше limit, значит на бэкенде посты кончились
+        hasMore: newPosts.length === limit,
+        isLoading: false,
+        // Обновляем виджет недавних постов только при первой загрузке
+        recentPosts: !append ? newPosts.slice(0, 5) : state.recentPosts,
+      }));
+    } catch (err) {
+      console.log(err);
+      set({
+        posts: append ? get().posts : [],
+        isLoading: false,
+        hasMore: false,
+      });
     }
   },
 

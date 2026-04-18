@@ -65,8 +65,6 @@ func (r *Repository) Create(ctx context.Context, post Post) (Post, error) {
 	}
 
 	// 2. Инвалидация Redis (то, что мы обсуждали)
-	// cacheKey := "community:posts:" + post.CommunityID
-	// r.rdb.Del(ctx, cacheKey)
 	r.clearCache(ctx, post.CommunityID, post.ID)
 
 	msg := kafka.Message{
@@ -82,12 +80,12 @@ func (r *Repository) Create(ctx context.Context, post Post) (Post, error) {
 	return post, err
 }
 
-func (r *Repository) GetAll(ctx context.Context, userID string) ([]Post, error) {
+func (r *Repository) GetAll(ctx context.Context, userID string, search string, sortBy string, limit, offset int) ([]Post, error) {
 	uid := userID
 	if uid == "" {
 		uid = "guest"
 	}
-	cacheKey := fmt.Sprintf("posts:all:u:%s", uid)
+	cacheKey := fmt.Sprintf("posts:all:u:%s:s:%s:srt:%s:l:%d:o:%d", userID, search, sortBy, limit, offset)
 
 	val, err := r.rdb.Get(ctx, cacheKey).Result()
 	if err == nil {
@@ -97,18 +95,39 @@ func (r *Repository) GetAll(ctx context.Context, userID string) ([]Post, error) 
 		}
 	}
 
+	// ORDER BY p.created_at DESC`
 	query := `
         SELECT p.id, p.title, p.content, p.author_id, u.username, p.community_id, p.created_at, p.rating,
 						COALESCE(v.vote_value, 0) as user_vote
         FROM posts p
 				JOIN users u ON p.author_id = u.id
-				LEFT JOIN votes v ON p.id = v.post_id 
-            AND v.user_id = NULLIF($1, '')::uuid -- Превращаем '' в NULL и кастим к uuid
-        ORDER BY p.created_at DESC`
+				LEFT JOIN votes v ON p.id = v.post_id AND v.user_id = NULLIF($1, '')::uuid
+        WHERE 1=1`
 
-	rows, err := r.db.Query(ctx, query, userID)
+	args := []interface{}{userID}
+	paramIdx := 2
+
+	// SEARCH
+	if search != "" {
+		query += fmt.Sprintf(" AND (p.title ILIKE $%d OR p.content ILIKE $%d)", paramIdx, paramIdx)
+		args = append(args, "%"+search+"%")
+		paramIdx++
+	}
+
+	// SORTING
+	if sortBy == "top" {
+		query += " ORDER BY p.rating DESC, p.created_at DESC"
+	} else {
+		query += " ORDER BY p.created_at DESC"
+	}
+
+	// PAGINATION
+	query += fmt.Sprintf(" LIMIT $%d OFFSET $%d", paramIdx, paramIdx+1)
+	args = append(args, limit, offset)
+
+	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("query error: %w", err)
 	}
 	defer rows.Close()
 
@@ -131,12 +150,12 @@ func (r *Repository) GetAll(ctx context.Context, userID string) ([]Post, error) 
 	return posts, nil
 }
 
-func (r *Repository) GetByCommunityID(ctx context.Context, communityID string, userID string) ([]Post, error) {
+func (r *Repository) GetByCommunityID(ctx context.Context, communityID string, userID string, search string, sortBy string, limit, offset int) ([]Post, error) {
 	uid := userID
 	if uid == "" {
 		uid = "guest"
 	}
-	cacheKey := fmt.Sprintf("community:posts:%s:user:%s", communityID, uid)
+	cacheKey := fmt.Sprintf("community:posts:%s:u:%s:s:%s:srt:%s:l:%d:o:%d", communityID, userID, search, sortBy, limit, offset)
 
 	val, err := r.rdb.Get(ctx, cacheKey).Result()
 	if err == nil {
@@ -151,14 +170,30 @@ func (r *Repository) GetByCommunityID(ctx context.Context, communityID string, u
 						COALESCE(v.vote_value, 0) as user_vote
         FROM posts p
 				JOIN users u ON p.author_id = u.id
-				LEFT JOIN votes v ON p.id = v.post_id 
-            AND v.user_id = NULLIF($2, '')::uuid
-        WHERE p.community_id = $1
-        ORDER BY p.created_at DESC`
+				LEFT JOIN votes v ON p.id = v.post_id AND v.user_id = NULLIF($2, '')::uuid
+        WHERE p.community_id = $1`
 
-	rows, err := r.db.Query(ctx, query, communityID, userID)
+	args := []interface{}{communityID, userID}
+	paramIdx := 3
+
+	if search != "" {
+		query += fmt.Sprintf(" AND (p.title ILIKE $%d OR p.content ILIKE $%d)", paramIdx, paramIdx)
+		args = append(args, "%"+search+"%")
+		paramIdx++
+	}
+
+	if sortBy == "top" {
+		query += " ORDER BY p.rating DESC, p.created_at DESC"
+	} else {
+		query += " ORDER BY p.created_at DESC"
+	}
+
+	query += fmt.Sprintf(" LIMIT $%d OFFSET $%d", paramIdx, paramIdx+1)
+	args = append(args, limit, offset)
+
+	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("query community error: %w", err)
 	}
 	defer rows.Close()
 
@@ -167,11 +202,14 @@ func (r *Repository) GetByCommunityID(ctx context.Context, communityID string, u
 		var p Post
 		rows.Scan(&p.ID, &p.Title, &p.Content, &p.AuthorID, &p.AuthorUsername,
 			&p.CommunityID, &p.CreatedAt, &p.Rating, &p.UserVote)
+		if err != nil {
+			return nil, err
+		}
 		posts = append(posts, p)
 	}
 
 	if data, err := json.Marshal(posts); err == nil {
-		r.rdb.Set(ctx, cacheKey, data, 10*time.Minute)
+		r.rdb.Set(ctx, cacheKey, data, 5*time.Minute)
 	}
 
 	return posts, nil

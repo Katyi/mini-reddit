@@ -6,9 +6,9 @@ const PostList = () => {
   const { communityName } = useParams();
   const { posts, isLoading } = usePostStore();
 
-  if (isLoading) {
+  if (isLoading && posts.length === 0) {
     return (
-      <div className="flex justify-center py-10">
+      <div className="flex justify-center py-20">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
       </div>
     );
@@ -50,6 +50,12 @@ const PostList = () => {
           </div>
         </Link>
       ))}
+
+      {isLoading && (
+        <div className="flex justify-center py-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
+        </div>
+      )}
     </div>
   );
 };
