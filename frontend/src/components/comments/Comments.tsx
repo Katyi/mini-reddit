@@ -5,20 +5,66 @@ import { useAuthStore } from '../../store/authStore';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../confirmModal/ConfirmModal';
 import ArrowIcon from '../arrowIcon/ArrowIcon';
+import { useDebounce } from '../../hooks/useDebounce';
+import Select from '../select/Select';
+import { formatDate } from '../../lib/formatDate';
+
+const sortOptions = [
+  { label: 'No sort', value: 'no sort' },
+  { label: 'Newest', value: 'new' },
+  { label: 'Top Rated', value: 'top' },
+];
 
 interface TreeComment extends Comment {
   children?: TreeComment[];
 }
 
 const Comments = ({ postId }: { postId: string }) => {
-  const { comments, fetchComments, voteComment, clearComments, isLoading } =
-    useCommentStore();
+  const {
+    comments,
+    fetchComments,
+    voteComment,
+    clearComments,
+    isLoading,
+    hasMore,
+  } = useCommentStore();
   const { user } = useAuthStore();
 
+  const [isSelectOpen, setIsSelectOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const [sort, setSort] = useState('');
+  const [page, setPage] = useState(1);
+  const debouncedSearch = useDebounce(search, 500);
+
+  const currentSortLabel =
+    sortOptions.find((o) => o.value === sort)?.label || 'Newest';
+
   useEffect(() => {
-    if (postId) fetchComments(postId);
+    // if (postId) fetchComments(postId);
+    setPage(1);
+    fetchComments(postId, {
+      search: debouncedSearch,
+      sort: sort,
+      page: 1,
+      append: false,
+    });
+    // return () => clearComments();
+  }, [postId, debouncedSearch, fetchComments, sort]);
+
+  useEffect(() => {
     return () => clearComments();
-  }, [postId, fetchComments, user?.id, clearComments]);
+  }, [clearComments]);
+
+  const loadMore = () => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchComments(postId, {
+      search: debouncedSearch,
+      sort,
+      page: nextPage,
+      append: true,
+    });
+  };
 
   const commentTree = useMemo(() => {
     const map: { [key: string]: TreeComment } = {};
@@ -103,8 +149,9 @@ const Comments = ({ postId }: { postId: string }) => {
               >
                 u/{comment.author_username}
               </span>
+              <span>•</span>
               <span className="text-xs text-gray-400">
-                {new Date(comment.created_at).toLocaleDateString()}
+                {formatDate(comment.created_at)}
               </span>
             </div>
 
@@ -228,11 +275,44 @@ const Comments = ({ postId }: { postId: string }) => {
     );
   };
 
+  if (isLoading && comments.length === 0) {
+    return (
+      <div className="flex justify-center py-20">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="mt-8 space-y-6">
       <h3 className="font-bold text-lg border-b pb-2">
         Comments ({comments.length})
       </h3>
+
+      <div className="flex items-center flex-wrap justify-between gap-2">
+        {/* SEARCH */}
+        <div className="w-full sm:w-1/2 relative">
+          <input
+            type="text"
+            placeholder="Search comments..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-10 px-3 py-1.5 border border-orange-500 rounded-lg text-sm 
+            focus:outline-orange-500 hover:outline hover:outline-orange-500"
+          />
+          <span className="absolute left-3 top-1.5 text-gray-400">🔍</span>
+        </div>
+
+        {/* SORT */}
+        <Select
+          options={sortOptions}
+          selectedLabel={currentSortLabel}
+          onChange={(val) => setSort(val)}
+          open={isSelectOpen} // добавь useState для этого
+          setOpen={setIsSelectOpen}
+          className="w-full sm:w-32"
+        />
+      </div>
 
       <div className="mb-8">
         {user ? (
@@ -252,15 +332,38 @@ const Comments = ({ postId }: { postId: string }) => {
         )}
       </div>
 
-      {isLoading ? (
+      {/* {isLoading && comments.length === 0 ? (
         <p className="text-gray-400 animate-pulse">Loading comments...</p>
-      ) : (
-        <div className="space-y-4">
-          {commentTree.map((rootComment) => (
-            <CommentNode key={rootComment.id} comment={rootComment} />
-          ))}
-        </div>
-      )}
+      ) : ( */}
+      <div className="space-y-4">
+        {commentTree.map((rootComment) => (
+          <CommentNode key={rootComment.id} comment={rootComment} />
+        ))}
+
+        {/* {isLoading && (
+          <p className="text-gray-400 animate-pulse">Loading comments...</p>
+        )} */}
+
+        {isLoading && (
+          <div className="flex justify-center py-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
+          </div>
+        )}
+
+        {/* Кнопка подгрузки */}
+        {hasMore && !isLoading && (
+          <button
+            onClick={loadMore}
+            disabled={isLoading}
+            // className="w-full py-2 text-sm font-bold text-orange-600 hover:bg-orange-50 border border-orange-200 rounded-lg transition-colors cursor-pointer"
+            className="w-full mt-6 py-3 bg-white border border-gray-200 rounded-xl font-bold text-gray-600 
+                        hover:border-orange-500 hover:text-orange-500 transition-all disabled:opacity-50 cursor-pointer"
+          >
+            Show More Comments
+          </button>
+        )}
+      </div>
+      {/* )} */}
     </div>
   );
 };

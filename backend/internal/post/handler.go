@@ -57,7 +57,7 @@ func (h *Handler) GetAllPosts(w http.ResponseWriter, r *http.Request) {
 
 	limit, _ := strconv.Atoi(query.Get("limit"))
 	if limit < 1 || limit > 50 {
-		limit = 10
+		limit = 50
 	} // ограничиваем максимум
 
 	offset := (page - 1) * limit
@@ -160,7 +160,7 @@ func (h *Handler) GetPostsByCommunity(w http.ResponseWriter, r *http.Request) {
 	}
 	limit, _ := strconv.Atoi(query.Get("limit"))
 	if limit < 1 || limit > 50 {
-		limit = 10
+		limit = 50
 	}
 	offset := (page - 1) * limit
 

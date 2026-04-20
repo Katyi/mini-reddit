@@ -7,6 +7,7 @@ import { useAuthStore } from '../../store/authStore';
 import ConfirmModal from '../../components/confirmModal/ConfirmModal';
 import toast from 'react-hot-toast';
 import ArrowIcon from '../../components/arrowIcon/ArrowIcon';
+import { formatDate } from '../../lib/formatDate';
 
 const Post = () => {
   const { id } = useParams();
@@ -73,18 +74,19 @@ const Post = () => {
     votePost(postId, value);
   };
 
-  if (isLoading)
+  if (isLoading || !post)
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-56px-80px)]">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
       </div>
     );
-  if (!post)
-    return (
-      <div className="flex items-center justify-center min-h-[calc(100vh-56px-80px)]">
-        Post not found
-      </div>
-    );
+
+  // if (!post)
+  //   return (
+  //     <div className="flex items-center justify-center min-h-[calc(100vh-56px-80px)]">
+  //       Post not found
+  //     </div>
+  //   );
 
   return (
     <div className="w-full flex justify-center">
@@ -98,8 +100,7 @@ const Post = () => {
                 u/{post?.author_username || 'anonymous'}
               </span>
               <span>•</span>
-              {/* Time I should change */}
-              <span>2 hours ago</span>
+              <span>{formatDate(post.created_at)}</span>
             </div>
 
             {/* Post title */}

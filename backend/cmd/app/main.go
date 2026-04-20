@@ -141,6 +141,7 @@ func main() {
 
 	r.HandleFunc("/communities", commHandler.GetAll).Methods("GET")
 	r.HandleFunc("/communities/name/{name}", commHandler.GetByName).Methods("GET")
+	r.HandleFunc("/communities/{id}", commHandler.GetById).Methods("GET")
 	r.Handle("/communities", user.AuthMiddleware(http.HandlerFunc(commHandler.Create))).Methods("POST")
 	r.Handle("/communities/{id}", user.AuthMiddleware(http.HandlerFunc(commHandler.Update))).Methods("PATCH")
 	r.Handle("/communities/{id}", user.AuthMiddleware(http.HandlerFunc(commHandler.Delete))).Methods("DELETE")

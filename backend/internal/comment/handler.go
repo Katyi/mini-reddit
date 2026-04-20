@@ -3,6 +3,7 @@ package comment
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/Katyi/mini-reddit/backend/internal/user"
 	"github.com/gorilla/mux"
@@ -52,9 +53,29 @@ func (h *Handler) GetCommentsByPost(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	postID := vars["id"]
 
+	q := r.URL.Query()
+	search := q.Get("search")
+	sort := q.Get("sort")
+
+	page, _ := strconv.Atoi(q.Get("page"))
+	if page < 1 {
+		page = 1
+	}
+
+	// limit := 20 // Для комментариев можно лимит побольше, чем для постов
+	limit, err := strconv.Atoi(q.Get("limit"))
+	if err != nil || limit <= 0 {
+		limit = 20 // дефолт, если в запросе пусто или абракадабра
+	}
+	if limit > 100 {
+		limit = 100 // защита: не даем юзеру запросить миллион строк за раз
+	}
+
+	offset := (page - 1) * limit
+
 	userID, _ := r.Context().Value(user.UserIDKey).(string)
 
-	comments, err := h.service.GetCommentsByPostID(r.Context(), postID, userID)
+	comments, err := h.service.GetCommentsByPostID(r.Context(), postID, userID, search, sort, limit, offset)
 	if err != nil {
 		http.Error(w, "failed to fetch comments", http.StatusInternalServerError)
 		return

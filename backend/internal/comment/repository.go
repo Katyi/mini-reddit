@@ -78,14 +78,21 @@ func (r *Repository) GetByID(ctx context.Context, id string) (Comment, error) {
 	return c, nil
 }
 
-func (r *Repository) GetByPostID(ctx context.Context, postID string, userID string) ([]Comment, error) {
-	// 1. Пытаемся взять из кэша
-	// Ключ уникален для пары Пост + Юзер (так как лайки у каждого свои)
-	cacheKey := fmt.Sprintf("comments:%s:u:%s", postID, userID)
-	if userID == "" {
-		cacheKey = fmt.Sprintf("comments:%s:u:guest", postID)
+func (r *Repository) GetByPostID(ctx context.Context, postID string, userID string, search string, sortBy string, limit, offset int) ([]Comment, error) {
+	uid := userID
+	if uid == "" {
+		uid = "guest"
 	}
 
+	// 1. Пытаемся взять из кэша
+	cacheKey := fmt.Sprintf("comments:%s:u:%s:q:%s:s:%s:l:%d:o:%d",
+		postID, // 1 (%s)
+		uid,    // 2 (%s)
+		search, // 3 (%s)
+		sortBy, // 4 (%s)
+		limit,  // 5 (%d)
+		offset, // 6 (%d)
+	)
 	val, err := r.rdb.Get(ctx, cacheKey).Result()
 	if err == nil {
 		var comments []Comment
@@ -94,6 +101,7 @@ func (r *Repository) GetByPostID(ctx context.Context, postID string, userID stri
 		}
 	}
 
+	// ORDER BY c.created_at ASC`
 	// 2. Если в кэше нет — идем в базу (твой существующий код)
 	query := `
 		SELECT 
@@ -107,11 +115,29 @@ func (r *Repository) GetByPostID(ctx context.Context, postID string, userID stri
 		LEFT JOIN users u ON c.author_id = u.id
 		LEFT JOIN comment_votes cv ON c.id = cv.comment_id 
             AND cv.user_id = NULLIF($2, '')::uuid
-		WHERE c.post_id = $1
-		ORDER BY c.created_at ASC`
+		WHERE c.post_id = $1`
+
+	// SEARCH
+	if search != "" {
+		// ILIKE для регистронезависимого поиска
+		query += fmt.Sprintf(" AND c.content ILIKE '%%%s%%'", search)
+	}
+
+	// SORTING
+	if sortBy == "top" {
+		query += " ORDER BY c.rating DESC"
+	} else if sortBy == "new" {
+		query += " ORDER BY c.created_at DESC" // Твой дефолт был ASC
+	} else {
+		query += " ORDER BY c.created_at ASC"
+	}
+
+	// PAGINATION
+	query += fmt.Sprintf(" LIMIT %d OFFSET %d", limit, offset)
 
 	rows, err := r.db.Query(ctx, query, postID, userID)
 	if err != nil {
+		fmt.Printf("SQL Error: %v\nQuery: %s\n", err, query) // Это напечатает ошибку в терминал
 		return nil, err
 	}
 	defer rows.Close()

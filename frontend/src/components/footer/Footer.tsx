@@ -2,7 +2,7 @@ import React from 'react';
 
 const Footer = () => {
   return (
-    <footer className="flex justify-between items-center h-20 border-t border-gray-300 p-3">
+    <footer className="flex justify-between flex-wrap items-center h-20 border-t border-gray-300 px-4 py-3">
       <p className="text-[#576F76]">Copyright © 2026, MINI-REDDIT.</p>
       {/* <p className="text-[#576F76]">alex.frontender@gmail.com</p> */}
       <a

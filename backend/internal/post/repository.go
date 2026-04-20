@@ -85,7 +85,13 @@ func (r *Repository) GetAll(ctx context.Context, userID string, search string, s
 	if uid == "" {
 		uid = "guest"
 	}
-	cacheKey := fmt.Sprintf("posts:all:u:%s:s:%s:srt:%s:l:%d:o:%d", userID, search, sortBy, limit, offset)
+	cacheKey := fmt.Sprintf("posts:all:u:%s:q:%s:s:%s:l:%d:o:%d",
+		uid,    // %s
+		search, // %s
+		sortBy, // %s
+		limit,  // %d
+		offset, // %d
+	)
 
 	val, err := r.rdb.Get(ctx, cacheKey).Result()
 	if err == nil {
@@ -97,10 +103,13 @@ func (r *Repository) GetAll(ctx context.Context, userID string, search string, s
 
 	// ORDER BY p.created_at DESC`
 	query := `
-        SELECT p.id, p.title, p.content, p.author_id, u.username, p.community_id, p.created_at, p.rating,
+        SELECT p.id, p.title, p.content, p.author_id, u.username, 
+				p.community_id, comm.name as community_name, -- Достаем имя!
+				p.created_at, p.rating,
 						COALESCE(v.vote_value, 0) as user_vote
         FROM posts p
 				JOIN users u ON p.author_id = u.id
+				JOIN communities comm ON p.community_id = comm.id -- Добавляем JOIN
 				LEFT JOIN votes v ON p.id = v.post_id AND v.user_id = NULLIF($1, '')::uuid
         WHERE 1=1`
 
@@ -136,7 +145,8 @@ func (r *Repository) GetAll(ctx context.Context, userID string, search string, s
 		var p Post
 		if err := rows.Scan(
 			&p.ID, &p.Title, &p.Content, &p.AuthorID, &p.AuthorUsername,
-			&p.CommunityID, &p.CreatedAt, &p.Rating, &p.UserVote,
+			&p.CommunityID, &p.CommunityName,
+			&p.CreatedAt, &p.Rating, &p.UserVote,
 		); err != nil {
 			fmt.Printf("GetAll scan error: %v\n", err)
 			return nil, err
@@ -155,7 +165,14 @@ func (r *Repository) GetByCommunityID(ctx context.Context, communityID string, u
 	if uid == "" {
 		uid = "guest"
 	}
-	cacheKey := fmt.Sprintf("community:posts:%s:u:%s:s:%s:srt:%s:l:%d:o:%d", communityID, userID, search, sortBy, limit, offset)
+	cacheKey := fmt.Sprintf("community:posts:%s:u:%s:q:%s:s:%s:l:%d:o:%d",
+		communityID, // 1 (%s)
+		uid,         // 2 (%s)
+		search,      // 3 (%s)
+		sortBy,      // 4 (%s)
+		limit,       // 5 (%d)
+		offset,      // 6 (%d)
+	)
 
 	val, err := r.rdb.Get(ctx, cacheKey).Result()
 	if err == nil {
@@ -166,12 +183,15 @@ func (r *Repository) GetByCommunityID(ctx context.Context, communityID string, u
 	}
 
 	query := `
-        SELECT p.id, p.title, p.content, p.author_id, u.username, p.community_id, p.created_at, p.rating,
+        SELECT p.id, p.title, p.content, p.author_id, u.username, 
+				p.community_id, comm.name as community_name,
+				p.created_at, p.rating,
 						COALESCE(v.vote_value, 0) as user_vote
         FROM posts p
 				JOIN users u ON p.author_id = u.id
+				JOIN communities comm ON p.community_id = comm.id
 				LEFT JOIN votes v ON p.id = v.post_id AND v.user_id = NULLIF($2, '')::uuid
-        WHERE p.community_id = $1`
+				WHERE p.community_id = $1`
 
 	args := []interface{}{communityID, userID}
 	paramIdx := 3
@@ -200,16 +220,17 @@ func (r *Repository) GetByCommunityID(ctx context.Context, communityID string, u
 	var posts []Post
 	for rows.Next() {
 		var p Post
-		rows.Scan(&p.ID, &p.Title, &p.Content, &p.AuthorID, &p.AuthorUsername,
-			&p.CommunityID, &p.CreatedAt, &p.Rating, &p.UserVote)
-		if err != nil {
+		if err := rows.Scan(&p.ID, &p.Title, &p.Content, &p.AuthorID, &p.AuthorUsername,
+			&p.CommunityID, &p.CommunityName,
+			&p.CreatedAt, &p.Rating, &p.UserVote,
+		); err != nil {
 			return nil, err
 		}
 		posts = append(posts, p)
 	}
 
 	if data, err := json.Marshal(posts); err == nil {
-		r.rdb.Set(ctx, cacheKey, data, 5*time.Minute)
+		r.rdb.Set(ctx, cacheKey, data, 10*time.Minute)
 	}
 
 	return posts, nil

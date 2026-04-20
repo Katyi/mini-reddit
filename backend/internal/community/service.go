@@ -55,3 +55,7 @@ func (s *Service) DeleteCommunity(ctx context.Context, id, userID string) error 
 func (s *Service) GetCommunityByName(ctx context.Context, name string) (Community, error) {
 	return s.repo.GetByName(ctx, name)
 }
+
+func (s *Service) GetCommunityByID(ctx context.Context, id string) (Community, error) {
+	return s.repo.GetByID(ctx, id)
+}

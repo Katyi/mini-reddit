@@ -100,7 +100,10 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
             <div
               className="px-4 py-2 rounded-b-lg hover:bg-orange-50 cursor-pointer text-sm text-gray-800 transition-colors"
               key={opt.label}
-              onClick={() => onChange(opt.value)}
+              onClick={() => {
+                onChange(opt.value);
+                setOpen(false);
+              }}
             >
               {opt.value}
             </div>

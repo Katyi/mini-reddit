@@ -18,8 +18,8 @@ func (s *Service) CreateComment(ctx context.Context, content string, authorID st
 	return s.repo.Create(ctx, Comment{Content: content, AuthorID: authorID, PostID: postID, ParentID: parentID})
 }
 
-func (s *Service) GetCommentsByPostID(ctx context.Context, postId string, userId string) ([]Comment, error) {
-	return s.repo.GetByPostID(ctx, postId, userId)
+func (s *Service) GetCommentsByPostID(ctx context.Context, postId string, userId string, search string, sortBy string, limit, offset int) ([]Comment, error) {
+	return s.repo.GetByPostID(ctx, postId, userId, search, sortBy, limit, offset)
 }
 
 func (s *Service) DeleteComment(ctx context.Context, commentID string, requesterID string) error {

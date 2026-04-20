@@ -155,3 +155,18 @@ func (h *Handler) GetByName(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(c)
 }
+
+func (h *Handler) GetById(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	c, err := h.service.GetCommunityByID(r.Context(), id)
+	if err != nil {
+		http.Error(w, "community not found", http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(c)
+
+}

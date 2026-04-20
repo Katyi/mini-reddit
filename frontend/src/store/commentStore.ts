@@ -6,9 +6,18 @@ let voteDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 interface CommentState {
   comments: Comment[];
   isLoading: boolean;
+  hasMore: boolean;
 
   clearComments: () => void;
-  fetchComments: (postId: string) => Promise<void>;
+  fetchComments: (
+    postId: string,
+    params?: {
+      search?: string;
+      sort?: string;
+      page?: number;
+      append?: boolean;
+    },
+  ) => Promise<void>;
   createComment: (
     postId: string,
     content: string,
@@ -26,18 +35,32 @@ interface CommentState {
 export const useCommentStore = create<CommentState>((set, get) => ({
   comments: [],
   isLoading: false,
+  hasMore: true,
 
-  clearComments: () => {
-    set({ comments: [] });
-  },
+  // clearComments: () => set({ comments: [], hasMore: true }),
+  clearComments: () => set({ comments: [] }),
 
-  fetchComments: async (postId) => {
+  fetchComments: async (
+    postId,
+    { search = '', sort = 'new', page = 1, append = false } = {},
+  ) => {
+    // if (!append)
     set({ isLoading: true });
+
+    const limit = 50;
     try {
-      const res = await api.get(`/posts/${postId}/comments`);
-      set({ comments: res.data || [], isLoading: false });
+      const res = await api.get(`/posts/${postId}/comments`, {
+        params: { search, sort, page, limit },
+      });
+
+      const newComments = res.data || [];
+      set((state) => ({
+        comments: append ? [...state.comments, ...newComments] : newComments,
+        hasMore: newComments.length === limit,
+        isLoading: false,
+      }));
     } catch {
-      set({ comments: [], isLoading: false });
+      set({ comments: [], isLoading: false, hasMore: false });
     }
   },
 

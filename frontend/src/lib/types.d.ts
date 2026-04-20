@@ -14,6 +14,7 @@ interface Post {
   author_id: string;
   author_username: string;
   community_id: string;
+  community_name: string;
   created_at: string;
   rating: number;
   user_vote: number;

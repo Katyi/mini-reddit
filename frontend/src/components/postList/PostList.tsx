@@ -1,9 +1,8 @@
-import { Link, useParams } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { usePostStore } from '../../store/postStore';
 import { formatDate } from '../../lib/formatDate';
 
 const PostList = () => {
-  const { communityName } = useParams();
   const { posts, isLoading } = usePostStore();
 
   if (isLoading && posts.length === 0) {
@@ -27,7 +26,7 @@ const PostList = () => {
       {posts.map((post) => (
         <Link
           key={post.id}
-          to={`/r/${communityName}/${post.id}`}
+          to={`/r/${post.community_name}/${post.id}`}
           className="block bg-white p-4 border border-gray-100 rounded-lg hover:border-orange-500 transition-colors"
         >
           <div className="flex items-center gap-2 mb-2 text-[10px] text-gray-500">

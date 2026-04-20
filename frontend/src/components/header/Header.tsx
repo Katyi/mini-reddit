@@ -12,42 +12,47 @@ interface HeaderProps {
 }
 
 const Header = ({ isSidebarOpen, toggleSidebar }: HeaderProps) => {
+  const { id } = useParams(); // Если есть ID в параметрах, значит мы внутри поста
+  const showSearch =
+    (location.pathname === '/' || location.pathname.startsWith('/r/')) && !id;
   const { communityName } = useParams();
   const { user, openModal, logout } = useAuthStore();
   const { searchQuery, setSearchQuery } = usePostStore();
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 h-14 px-4 flex justify-between items-center shadow-2xs bg-white">
+    <header className="sticky top-0 z-50 h-full gap-2 lg:gap-0 py-2 px-4 flex flex-wrap justify-between items-center shadow-2xs bg-white">
       <div className="flex items-center gap-4">
         {/* Бургер для мобилок: виден только если сайдбар закрыт и экран < md */}
         {!isSidebarOpen && (
           <button
             onClick={toggleSidebar}
-            className="p-2 hover:bg-gray-100 rounded-lg md:hidden cursor-pointer"
+            className="p-1 sm:p-2 hover:bg-gray-100 rounded-lg md:hidden cursor-pointer"
           >
             <img src={burger} alt="menu" width={24} />
           </button>
         )}
         <Link to={'/'}>
-          <h1 className="font-extrabold text-2xl text-[#FF4500]">
+          <h1 className="font-extrabold text-2xl text-[#FF4500] hidden lg:block">
             MINI-REDDIT
           </h1>
         </Link>
       </div>
 
       {/* SEARCH INPUT */}
-      <div className="max-w-md w-full relative hidden md:block">
-        <input
-          type="text"
-          placeholder={`Search in ${communityName ? 'r/' + communityName : 'all posts'}...`}
-          className="w-full pl-10 pr-4 py-1.5 bg-gray-100 border-none rounded-full text-sm focus:ring-2 outline-none
+      {showSearch && (
+        <div className="w-full sm:max-w-md relative">
+          <input
+            type="text"
+            placeholder={`Search in ${communityName ? 'r/' + communityName : 'all posts'}...`}
+            className="w-full pl-10 pr-4 py-1.5 bg-gray-100 border-none rounded-full text-sm focus:ring-2 outline-none
           focus:ring-orange-500 transition-all"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-        <span className="absolute left-3 top-1.5 text-gray-400">🔍</span>
-      </div>
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <span className="absolute left-3 top-1.5 text-gray-400">🔍</span>
+        </div>
+      )}
 
       {/* RIGHT SIDE WITH CREATE USERNAME LOGOUT LOGIN... */}
       <div className="flex items-center gap-2">
@@ -75,7 +80,7 @@ const Header = ({ isSidebarOpen, toggleSidebar }: HeaderProps) => {
           <>
             <button
               onClick={() => openModal('login')}
-              className="px-4 py-2 bg-orange-600 text-white rounded-full font-bold cursor-pointer"
+              className="w-[calc(100vw-32px)] sm:w-fit px-4 py-2 bg-orange-600 text-white rounded-full font-bold cursor-pointer"
             >
               Log In
             </button>
