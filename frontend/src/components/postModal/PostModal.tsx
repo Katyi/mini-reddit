@@ -5,6 +5,9 @@ import closeIcon from '../../assets/icons/closeIcon.svg';
 import toast from 'react-hot-toast';
 import { postSchema } from '../../lib/schemas';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+
+const BASE_URL = import.meta.env.VITE_BASE_URL || 'http://localhost:3000';
 
 interface Props {
   isOpen: boolean;
@@ -12,8 +15,9 @@ interface Props {
   initialData?: {
     id: string;
     title: string;
-    content: string;
+    content?: string;
     community_id: string;
+    image_url: string | null;
   };
 }
 
@@ -25,18 +29,33 @@ type ValidationErrors = {
 };
 
 const PostModal: React.FC<Props> = ({ isOpen, onClose, initialData }) => {
+  const navigate = useNavigate();
   const [title, setTitle] = useState(initialData?.title || '');
   const [content, setContent] = useState(initialData?.content || '');
   const [error, setError] = useState<ValidationErrors>({});
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [communityId, setCommunityId] = useState(
     initialData?.community_id || '',
   );
+  const [shouldDeleteExistingImage, setShouldDeleteExistingImage] =
+    useState(false);
 
   const { createPost, updatePost } = usePostStore();
   const { communities } = useCommunityStore();
   const isEditMode = !!initialData;
 
   if (!isOpen) return null;
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setSelectedFile(file);
+      // Создаем временную ссылку для предпросмотра
+      setPreviewUrl(URL.createObjectURL(file));
+      setShouldDeleteExistingImage(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,33 +71,39 @@ const PostModal: React.FC<Props> = ({ isOpen, onClose, initialData }) => {
     }
 
     try {
-      const action =
-        isEditMode && initialData
-          ? updatePost(initialData.id, title, content)
-          : createPost(title, content, communityId);
+      if (isEditMode && initialData) {
+        await updatePost(
+          initialData.id,
+          result.data.title,
+          result.data.content,
+          selectedFile || undefined,
+          shouldDeleteExistingImage,
+        );
+        toast.success('Post updated!');
+        onClose();
+      } else {
+        const newPost = await createPost(
+          result.data.title,
+          result.data.content,
+          result.data.communityId,
+          selectedFile || undefined,
+        );
 
-      await toast.promise(
-        action,
-        {
-          loading: isEditMode ? 'Saving changes...' : 'Creating post...',
-          success: isEditMode ? 'Post updated!' : 'Post created successfully!',
-          error: 'Something went wrong. Please try again.',
-        },
-        {
-          position: 'top-center',
-          style: {
-            borderRadius: '10px',
-            background: '#333',
-            color: '#fff',
-          },
-        },
-      );
-
-      onClose();
-      if (!isEditMode) {
+        toast.success('Post created!');
+        onClose();
         setTitle('');
         setContent('');
         setCommunityId('');
+        setSelectedFile(null);
+        setPreviewUrl(null); // Вот это очистит картинку
+        setShouldDeleteExistingImage(false);
+        setError({});
+
+        if (newPost && newPost.community_name) {
+          navigate(`/r/${newPost.community_name}`);
+        } else {
+          navigate('/');
+        }
       }
     } catch (err) {
       let serverMessage = 'Something went wrong. Please try again.';
@@ -113,7 +138,6 @@ const PostModal: React.FC<Props> = ({ isOpen, onClose, initialData }) => {
                 Community
               </label>
               <select
-                // required
                 className="w-full p-2 border rounded-lg outline-none focus:ring-2 focus:ring-orange-500"
                 value={communityId}
                 onChange={(e) => setCommunityId(e.target.value)}
@@ -138,7 +162,6 @@ const PostModal: React.FC<Props> = ({ isOpen, onClose, initialData }) => {
               Title
             </label>
             <input
-              // required
               className="w-full p-2 border rounded-lg outline-none focus:ring-2 focus:ring-orange-500"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -156,7 +179,6 @@ const PostModal: React.FC<Props> = ({ isOpen, onClose, initialData }) => {
               Content
             </label>
             <textarea
-              // required
               className="w-full p-2 border rounded-lg h-40 resize-none outline-none focus:ring-2 focus:ring-orange-500"
               value={content}
               onChange={(e) => setContent(e.target.value)}
@@ -167,6 +189,64 @@ const PostModal: React.FC<Props> = ({ isOpen, onClose, initialData }) => {
                 <p className="text-red-500 text-xs">{error.content[0]}</p>
               )}
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Image (optional)
+            </label>
+
+            {/* Сценарий А: Есть старое фото и мы его еще не пометили на удаление */}
+            {isEditMode &&
+              initialData?.image_url &&
+              !shouldDeleteExistingImage &&
+              !previewUrl && (
+                <div className="relative inline-block mt-2">
+                  <img
+                    src={`${BASE_URL}${initialData.image_url}`}
+                    className="h-24 w-24 object-cover rounded-lg border"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShouldDeleteExistingImage(true)}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 shadow-md"
+                    title="Remove current image"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+
+            {/* Сценарий Б: Юзер выбрал НОВЫЙ файл (превью) */}
+            {previewUrl && (
+              <div className="relative inline-block mt-2">
+                <img
+                  src={previewUrl}
+                  className="h-24 w-24 object-cover rounded-lg border border-orange-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedFile(null);
+                    setPreviewUrl(null);
+                  }}
+                  className="absolute -top-2 -right-2 bg-gray-500 text-white rounded-full w-6 h-6 flex items-center justify-center"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+
+            {/* Поле выбора файла показываем, если нет превью и нет старого фото (или оно удалено) */}
+            {!previewUrl &&
+              (!initialData?.image_url || shouldDeleteExistingImage) && (
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100"
+                />
+              )}
           </div>
 
           <div className="flex justify-end gap-3 pt-2">

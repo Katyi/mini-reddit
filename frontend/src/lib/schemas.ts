@@ -50,7 +50,10 @@ export const communitySchema = z.object({
 
 export const postSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters').max(100),
-  content: z.string().min(3, 'Content must be at least 3 characters'),
+  content: z
+    .string()
+    // .min(3, 'Content must be at least 3 characters')
+    .optional(),
   communityId: z.string().min(1, 'Please select a community'),
 });
 

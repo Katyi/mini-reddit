@@ -10,11 +10,12 @@ interface Community {
 interface Post {
   id: string;
   title: string;
-  content: string;
+  content?: string;
   author_id: string;
   author_username: string;
   community_id: string;
   community_name: string;
+  image_url?: string;
   created_at: string;
   rating: number;
   user_vote: number;

@@ -13,8 +13,8 @@ func NewService(repo *Repository) *Service {
 	return &Service{repo: repo}
 }
 
-func (s *Service) CreatePost(ctx context.Context, title, content string, authorID string, communityID string) (Post, error) {
-	return s.repo.Create(ctx, Post{Title: title, Content: content, AuthorID: authorID, CommunityID: communityID})
+func (s *Service) CreatePost(ctx context.Context, title, content string, imageURL string, authorID string, communityID string) (Post, error) {
+	return s.repo.Create(ctx, Post{Title: title, Content: content, ImageURL: imageURL, AuthorID: authorID, CommunityID: communityID})
 }
 
 func (s *Service) GetAllPosts(ctx context.Context, userID string, search string, sortBy string, limit, offset int) ([]Post, error) {
@@ -25,7 +25,7 @@ func (s *Service) GetPostByID(ctx context.Context, id string, userID string) (Po
 	return s.repo.GetByID(ctx, id, userID)
 }
 
-func (s *Service) UpdatePost(ctx context.Context, id string, title, content string, requesterID string) (Post, error) {
+func (s *Service) UpdatePost(ctx context.Context, id string, title, content string, imageURL string, requesterID string) (Post, error) {
 	post, err := s.repo.GetByID(ctx, id, requesterID)
 	if err != nil {
 		return Post{}, err
@@ -35,7 +35,7 @@ func (s *Service) UpdatePost(ctx context.Context, id string, title, content stri
 		return Post{}, errors.New("you are not the author of this post")
 	}
 
-	return s.repo.Update(ctx, id, Post{Title: title, Content: content})
+	return s.repo.Update(ctx, id, Post{Title: title, Content: content, ImageURL: imageURL})
 }
 
 func (s *Service) DeletePost(ctx context.Context, id string, requesterID string) error {

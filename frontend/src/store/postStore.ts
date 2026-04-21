@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import api from '../api/axios';
-import { useAuthStore } from './authStore';
 
 let voteDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -25,10 +24,17 @@ interface PostState {
   fetchPost: (id: string) => Promise<void>;
   createPost: (
     title: string,
-    content: string,
+    content: string | undefined,
     communityId: string,
+    imageFile?: File,
+  ) => Promise<Post>;
+  updatePost: (
+    id: string,
+    title: string,
+    content: string | undefined,
+    imageFile?: File,
+    deleteImage?: boolean,
   ) => Promise<void>;
-  updatePost: (id: string, title: string, content: string) => Promise<void>;
   deletePost: (id: string) => Promise<void>;
   votePost: (postId: string, value: number) => Promise<void>;
 }
@@ -107,56 +113,63 @@ export const usePostStore = create<PostState>((set, get) => ({
     }
   },
 
-  createPost: async (title, content, communityId) => {
+  createPost: async (title, content, communityId, imageFile) => {
+    set({ isLoading: true });
     try {
-      const res = await api.post('/posts', {
-        title,
-        content,
-        community_id: communityId,
-      });
+      const formData = new FormData();
+      formData.append('title', title);
+      if (content) formData.append('content', content); // Добавляем, только если есть
+      formData.append('community_id', communityId);
+      if (imageFile) {
+        formData.append('image', imageFile);
+      }
+      const { data } = await api.post('/posts', formData);
 
-      const newPost = {
-        ...res.data,
-        author_username: useAuthStore.getState().user?.username || 'me',
-      };
-      // Можно либо добавить пост в начало списка, либо просто перезапросить список
       set((state) => ({
-        posts: [newPost, ...state.posts],
-        recentPosts: [newPost, ...state.recentPosts].slice(0, 5),
+        posts: [data, ...state.posts],
+        recentPosts: [
+          data,
+          ...state.recentPosts.filter((p) => p.id !== data.id),
+        ].slice(0, 5),
       }));
+      return data;
     } catch (err) {
       console.error(err);
       throw err;
+    } finally {
+      set({ isLoading: false });
     }
   },
 
-  updatePost: async (id, title, content) => {
+  updatePost: async (id, title, content, imageFile, deleteImage) => {
     try {
-      const res = await api.patch(`/posts/${id}`, { title, content });
+      const formData = new FormData();
+      formData.append('title', title);
+      if (content) formData.append('content', content); // Добавляем, только если есть
+      if (imageFile) {
+        // Если есть файл, просто шлем его.
+        // Бэкенд сам заменит старое на новое.
+        formData.append('image', imageFile);
+      } else if (deleteImage) {
+        // Флаг удаления шлем ТОЛЬКО если нет нового файла
+        formData.append('delete_image', 'true');
+      }
 
-      set((state) => {
-        // 1. Обновляем пост в общем списке (Home / Community)
-        const updatedPosts = state.posts.map((p) =>
-          p.id === id ? { ...p, ...res.data } : p,
-        );
-
-        // 2. Обновляем текущий открытый пост (Post.tsx)
-        let updatedCurrentPost = state.post;
-        if (state.post && state.post.id === id) {
-          // Крайне важно: сохраняем старые поля (author_id),
-          // если бэк их вдруг не прислал
-          updatedCurrentPost = { ...state.post, ...res.data };
-        }
-
-        return {
-          posts: updatedPosts,
-          post: updatedCurrentPost,
-          // Также обновляем в "Recent Posts" в сайдбаре
-          recentPosts: state.recentPosts.map((p) =>
-            p.id === id ? { ...p, ...res.data } : p,
-          ),
-        };
+      const response = await api.patch(`/posts/${id}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
+
+      const updatedPost = response.data;
+
+      set((state) => ({
+        posts: state.posts.map((p) =>
+          p.id === id ? { ...p, ...updatedPost } : p,
+        ),
+        post:
+          state.post?.id === id
+            ? { ...state.post, ...updatedPost }
+            : state.post,
+      }));
     } catch (err) {
       console.error('Update failed:', err);
       throw err;

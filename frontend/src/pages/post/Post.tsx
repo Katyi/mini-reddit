@@ -9,8 +9,10 @@ import toast from 'react-hot-toast';
 import ArrowIcon from '../../components/arrowIcon/ArrowIcon';
 import { formatDate } from '../../lib/formatDate';
 
+const BASE_URL = import.meta.env.VITE_BASE_URL || 'http://localhost:3000';
+
 const Post = () => {
-  const { id } = useParams();
+  const { id, communityName } = useParams();
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const { post, fetchPost, deletePost, votePost, clearCurrentPost, isLoading } =
@@ -24,9 +26,7 @@ const Post = () => {
   }, [user?.id, post?.author_id]);
 
   useEffect(() => {
-    // clearCurrentPost();
     if (id) fetchPost(id);
-    // return () => clearCurrentPost();
   }, [id, fetchPost, user]);
 
   useEffect(() => {
@@ -56,7 +56,7 @@ const Post = () => {
       },
     );
 
-    navigate('/');
+    navigate(`/r/${communityName}`);
   };
 
   const handleVote = (postId: string, value: number) => {
@@ -81,13 +81,6 @@ const Post = () => {
       </div>
     );
 
-  // if (!post)
-  //   return (
-  //     <div className="flex items-center justify-center min-h-[calc(100vh-56px-80px)]">
-  //       Post not found
-  //     </div>
-  //   );
-
   return (
     <div className="w-full flex justify-center">
       <div className="w-full max-w-300 grid grid-cols-1 lg:grid-cols-12 gap-6 p-6">
@@ -105,6 +98,21 @@ const Post = () => {
 
             {/* Post title */}
             <h1 className="text-3xl font-bold mb-4">{post?.title}</h1>
+
+            {/* Post Image */}
+            {post.image_url && (
+              <div className="mb-6 rounded-lg overflow-hidden border border-gray-100 bg-gray-50">
+                <img
+                  src={`${BASE_URL}${post.image_url}`}
+                  alt={post.title}
+                  className="w-full max-h-[600px] object-contain mx-auto"
+                  onError={(e) => {
+                    // Если картинка не прогрузилась (например, удалена с сервера)
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
+                />
+              </div>
+            )}
 
             {/* Edit and delete buttons */}
             {isAuthor && (
@@ -198,6 +206,7 @@ const Post = () => {
             title: post.title,
             content: post.content,
             community_id: post.community_id,
+            image_url: post.image_url || null,
           }}
         />
       )}

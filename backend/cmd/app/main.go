@@ -114,6 +114,16 @@ func main() {
 	})
 
 	r := mux.NewRouter()
+
+	// PATH FOR MEDIA
+	uploadDir := os.Getenv("UPLOAD_DIR")
+	if uploadDir == "" {
+		uploadDir = "./uploads" // дефолт, если забыли про .env
+	}
+	// Настраиваем раздачу файлов. Теперь по ссылке http://localhost:9091/uploads/файл.jpg
+	// браузер будет видеть картинки из твоей папки.
+	r.PathPrefix("/uploads/").Handler(http.StripPrefix("/uploads/", http.FileServer(http.Dir(uploadDir))))
+
 	handler := c.Handler(r)
 
 	// just for test server
