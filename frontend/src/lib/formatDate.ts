@@ -1,4 +1,4 @@
-export const formatDate = (dateString: string) => {
+export const formatDate = (dateString?: string) => {
   if (!dateString) return '';
 
   const date = new Date(dateString);

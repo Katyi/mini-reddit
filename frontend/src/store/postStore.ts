@@ -15,6 +15,7 @@ interface PostState {
   setSearchQuery: (query: string) => void;
   clearCurrentPost: () => void;
   fetchPosts: (params?: {
+    authorId?: string;
     communityId?: string;
     search?: string;
     sort?: string;
@@ -62,6 +63,7 @@ export const usePostStore = create<PostState>((set, get) => ({
   },
 
   fetchPosts: async ({
+    authorId,
     communityId,
     search = '',
     sort = 'new',
@@ -75,7 +77,7 @@ export const usePostStore = create<PostState>((set, get) => ({
         ? `/communities/${communityId}/posts`
         : '/posts';
       const res = await api.get(baseUrl, {
-        params: { search, sort, page, limit },
+        params: { author_id: authorId, search, sort, page, limit },
       });
 
       const newPosts = res.data || [];

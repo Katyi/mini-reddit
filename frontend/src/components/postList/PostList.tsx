@@ -30,10 +30,17 @@ const PostList = () => {
           className="block bg-white p-4 border border-gray-100 rounded-lg hover:border-orange-500 transition-colors"
         >
           <div className="flex items-center gap-2 mb-2 text-[10px] text-gray-500">
-            <div className="w-5 h-5 rounded-full bg-gray-100" />
-            <span className="font-bold text-black">
+            <img
+              src={`https://api.dicebear.com/7.x/shapes/svg?seed=${post?.author_username}`}
+              className="w-5 h-5 rounded-full border-2 border-orange-100 shadow-sm overflow-hidden"
+              alt="avatar"
+            />
+            <Link
+              to={`/u/${post.author_username}`}
+              className="font-bold text-black  p-0.5 px-2 rounded-full hover:bg-gray-200"
+            >
               u/{post.author_username}
-            </span>
+            </Link>
             <span>•</span>
             <span>{formatDate(post.created_at)}</span>
           </div>

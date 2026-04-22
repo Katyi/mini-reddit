@@ -140,6 +140,7 @@ func main() {
 	r.HandleFunc("/register", userHandler.Register).Methods("POST")
 	r.HandleFunc("/login", userHandler.Login).Methods("POST")
 	r.HandleFunc("/refresh", userHandler.RefreshToken).Methods("POST")
+	r.HandleFunc("/users/profile/{username}", userHandler.GetProfile).Methods("GET")
 
 	r.Handle("/posts/{id}/comments", user.AuthMiddleware(http.HandlerFunc(commentHandler.GetCommentsByPost))).Methods("GET")
 	r.Handle("/posts/{id}/comments", user.AuthMiddleware(http.HandlerFunc(commentHandler.CreateComment))).Methods("POST")

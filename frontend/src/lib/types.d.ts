@@ -37,7 +37,7 @@ interface User {
   id: string;
   username: string;
   email: string;
-  Create_at: string;
+  created_at: string;
 }
 
 interface BackendError {

@@ -37,3 +37,13 @@ func (r *Repository) GetByEmail(ctx context.Context, email string) (User, error)
 
 	return u, err
 }
+
+func (r *Repository) GetByUsername(ctx context.Context, username string) (User, error) {
+	var u User
+	query := `SELECT id, username, email, created_at FROM users WHERE username = $1`
+
+	err := r.db.QueryRow(ctx, query, username).
+		Scan(&u.ID, &u.Username, &u.Email, &u.CreatedAt)
+
+	return u, err
+}

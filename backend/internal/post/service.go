@@ -17,8 +17,8 @@ func (s *Service) CreatePost(ctx context.Context, title, content string, imageUR
 	return s.repo.Create(ctx, Post{Title: title, Content: content, ImageURL: imageURL, AuthorID: authorID, CommunityID: communityID})
 }
 
-func (s *Service) GetAllPosts(ctx context.Context, userID string, search string, sortBy string, limit, offset int) ([]Post, error) {
-	return s.repo.GetAll(ctx, userID, search, sortBy, limit, offset)
+func (s *Service) GetAllPosts(ctx context.Context, userID string, authorID string, search string, sortBy string, limit, offset int) ([]Post, error) {
+	return s.repo.GetAll(ctx, userID, authorID, search, sortBy, limit, offset)
 }
 
 func (s *Service) GetPostByID(ctx context.Context, id string, userID string) (Post, error) {

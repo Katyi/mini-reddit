@@ -8,6 +8,7 @@ import ArrowIcon from '../arrowIcon/ArrowIcon';
 import { useDebounce } from '../../hooks/useDebounce';
 import Select from '../select/Select';
 import { formatDate } from '../../lib/formatDate';
+import { Link } from 'react-router-dom';
 
 const sortOptions = [
   { label: 'No sort', value: 'no sort' },
@@ -132,23 +133,27 @@ const Comments = ({ postId }: { postId: string }) => {
       <div
         className={`mt-4 ${depth > 0 ? 'ml-6 border-l-2 border-gray-100 pl-4' : ''}`}
       >
-        <div className="flex gap-3">
+        <div className="flex gap-1">
           {/* Аватарку можно сделать серой для удаленных */}
-          <div
-            className={`w-8 h-8 rounded-full flex-shrink-0 ${
-              isDeleted
-                ? 'bg-gray-200'
-                : 'bg-gradient-to-br from-orange-400 to-yellow-400'
-            }`}
-          />
+          {!isDeleted ? (
+            <img
+              src={`https://api.dicebear.com/7.x/shapes/svg?seed=${comment?.author_username}`}
+              className="w-6 h-6 rounded-full flex-shrink-0 border-2 border-orange-100 shadow-sm"
+              alt="avatar"
+            />
+          ) : (
+            <div className="w-6 h-6 rounded-full flex-shrink-0 bg-gray-200" />
+          )}
 
           <div className="flex flex-col w-full">
             <div className="flex items-center gap-2">
-              <span
-                className={`text-sm font-semibold ${isDeleted ? 'text-gray-400' : 'text-gray-900'}`}
+              <Link
+                to={`/u/${comment.author_username}`}
+                className={`p-0.5 px-2 text-sm font-semibold ${isDeleted ? 'text-gray-400' : 'text-gray-900 hover:bg-gray-200'}
+                  rounded-full`}
               >
                 u/{comment.author_username}
-              </span>
+              </Link>
               <span>•</span>
               <span className="text-xs text-gray-400">
                 {formatDate(comment.created_at)}

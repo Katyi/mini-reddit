@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { usePostStore } from '../../store/postStore';
 import Comments from '../../components/comments/Comments';
 import PostModal from '../../components/postModal/PostModal';
@@ -87,11 +87,18 @@ const Post = () => {
         <section className="lg:col-span-8 space-y-4 w-full">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 min-h-125">
             <div className="flex items-center gap-2 mb-4 text-xs text-gray-500">
-              <div className="w-6 h-6 rounded-full bg-gray-200" />
+              <img
+                src={`https://api.dicebear.com/7.x/shapes/svg?seed=${post?.author_username}`}
+                className="w-6 h-6 rounded-full border-2 border-orange-100 shadow-sm"
+                alt="avatar"
+              />
               {/* Author name */}
-              <span className="font-bold text-black">
+              <Link
+                to={`/u/${post.author_username}`}
+                className="font-bold text-black  p-0.5 px-2 rounded-full hover:bg-gray-200"
+              >
                 u/{post?.author_username || 'anonymous'}
-              </span>
+              </Link>
               <span>•</span>
               <span>{formatDate(post.created_at)}</span>
             </div>

@@ -79,7 +79,10 @@ func (h *Handler) CreatePost(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) GetAllPosts(w http.ResponseWriter, r *http.Request) {
+	userID, _ := r.Context().Value(user.UserIDKey).(string)
+
 	query := r.URL.Query()
+	authorID := query.Get("author_id") // Получаем ID автора из URL
 	search := query.Get("search")
 	sortBy := query.Get("sort") // "new" или "top"
 
@@ -95,9 +98,9 @@ func (h *Handler) GetAllPosts(w http.ResponseWriter, r *http.Request) {
 
 	offset := (page - 1) * limit
 
-	userID, _ := r.Context().Value(user.UserIDKey).(string)
+	// userID, _ := r.Context().Value(user.UserIDKey).(string)
 
-	posts, err := h.service.GetAllPosts(r.Context(), userID, search, sortBy, limit, offset)
+	posts, err := h.service.GetAllPosts(r.Context(), userID, authorID, search, sortBy, limit, offset)
 	if err != nil {
 		http.Error(w, "failed to fetch posts", http.StatusInternalServerError)
 		return

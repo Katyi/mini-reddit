@@ -108,3 +108,7 @@ func (s *Service) LoginUser(ctx context.Context, email, password string) (User, 
 
 	return user, accessToken, refreshToken, nil
 }
+
+func (s *Service) GetUserProfile(ctx context.Context, username string) (User, error) {
+	return s.repo.GetByUsername(ctx, username)
+}

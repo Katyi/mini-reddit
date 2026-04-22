@@ -66,9 +66,11 @@ const Header = ({ isSidebarOpen, toggleSidebar }: HeaderProps) => {
               Create
             </button>
 
-            <span className="text-xl font-semibold text-orange-600">
-              u/{user.username}
-            </span>
+            <Link to={`/u/${user.username}`}>
+              <span className="text-xl font-semibold text-orange-600">
+                u/{user.username}
+              </span>
+            </Link>
             <button
               onClick={logout}
               className="px-4 py-1 border-2 border-orange-600 rounded-full text-sm font-bold cursor-pointer"

@@ -93,17 +93,19 @@ func (r *Repository) Create(ctx context.Context, post Post) (Post, error) {
 	return post, err
 }
 
-func (r *Repository) GetAll(ctx context.Context, userID string, search string, sortBy string, limit, offset int) ([]Post, error) {
+func (r *Repository) GetAll(ctx context.Context, userID string, authorID string, search string, sortBy string, limit, offset int) ([]Post, error) {
 	uid := userID
 	if uid == "" {
 		uid = "guest"
 	}
-	cacheKey := fmt.Sprintf("posts:all:u:%s:q:%s:s:%s:l:%d:o:%d",
-		uid,    // %s
-		search, // %s
-		sortBy, // %s
-		limit,  // %d
-		offset, // %d
+
+	cacheKey := fmt.Sprintf("posts:all:u:%s:a:%s:q:%s:s:%s:l:%d:o:%d",
+		uid,      // %s
+		authorID, // %s
+		search,   // %s
+		sortBy,   // %s
+		limit,    // %d
+		offset,   // %d
 	)
 
 	val, err := r.rdb.Get(ctx, cacheKey).Result()
@@ -121,12 +123,19 @@ func (r *Repository) GetAll(ctx context.Context, userID string, search string, s
 						COALESCE(v.vote_value, 0) as user_vote
         FROM posts p
 				JOIN users u ON p.author_id = u.id
-				JOIN communities comm ON p.community_id = comm.id -- Добавляем JOIN
+				JOIN communities comm ON p.community_id = comm.id
 				LEFT JOIN votes v ON p.id = v.post_id AND v.user_id = NULLIF($1, '')::uuid
         WHERE 1=1`
 
 	args := []interface{}{userID}
 	paramIdx := 2
+
+	// ФИЛЬТР ПО АВТОРУ (для профиля)
+	if authorID != "" {
+		query += fmt.Sprintf(" AND p.author_id = $%d", paramIdx)
+		args = append(args, authorID)
+		paramIdx++
+	}
 
 	// SEARCH
 	if search != "" {
