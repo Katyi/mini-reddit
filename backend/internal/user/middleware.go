@@ -16,21 +16,32 @@ const UserIDKey contextKey = "userID"
 func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")
+		tokenStr := ""
 
-		// Если гость (нет заголовка) — просто пропускаем к хендлеру
-		if authHeader == "" {
+		// 1. Пытаемся достать токен из заголовка
+		if authHeader != "" {
+			parts := strings.Split(authHeader, " ")
+			if len(parts) == 2 && parts[0] == "Bearer" {
+				tokenStr = parts[1]
+			} else {
+				http.Error(w, "Invalid token format", http.StatusUnauthorized)
+				return
+			}
+		}
+
+		// 2. Если в заголовке пусто, пробуем достать из URL (для WebSocket)
+		if tokenStr == "" {
+			tokenStr = r.URL.Query().Get("token")
+		}
+
+		// 3. Если токена нет нигде — считаем пользователя гостем
+		if tokenStr == "" {
 			next.ServeHTTP(w, r)
 			return
 		}
 
-		// Если пытается косить под юзера (заголовок есть), но формат битый — ошибка
-		parts := strings.Split(authHeader, " ")
-		if len(parts) != 2 || parts[0] != "Bearer" {
-			http.Error(w, "Invalid token format", http.StatusUnauthorized)
-			return
-		}
-
-		token, err := jwt.Parse(parts[1], func(token *jwt.Token) (interface{}, error) {
+		// 4. Проверяем найденный токен (неважно, откуда он пришел)
+		token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
 			return jwtSecret, nil
 		})
 
@@ -43,6 +54,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		// Если всё ок — пишем ID в контекст
 		claims, _ := token.Claims.(jwt.MapClaims)
 		userID, _ := claims["sub"].(string)
+
 		ctx := context.WithValue(r.Context(), UserIDKey, userID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})

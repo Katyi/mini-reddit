@@ -1,13 +1,28 @@
-import { useState } from 'react';
-
+import { useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import Header from './header/Header';
 import Footer from './footer/Footer';
 import Drawer from './drawer/Drawer';
 import AuthModal from './AuthModal/AuthModal';
+import { useAuthStore } from '../store/authStore';
+import { useChatStore } from '../store/chatStore';
+import ChatWidget from './chat/ChatWidget';
 
 const MainLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const { accessToken } = useAuthStore();
+  const { connect, disconnect } = useChatStore();
+
+  useEffect(() => {
+    if (accessToken) {
+      connect(accessToken);
+    }
+
+    return () => {
+      // Закрываем сокет при размонтировании лейаута
+      disconnect();
+    };
+  }, [accessToken, connect, disconnect]);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -27,8 +42,8 @@ const MainLayout = () => {
         </main>
       </div>
       <Footer />
-
       <AuthModal />
+      <ChatWidget />
     </div>
   );
 };

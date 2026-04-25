@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/Katyi/mini-reddit/backend/internal/chat"
 	"github.com/Katyi/mini-reddit/backend/internal/comment"
 	"github.com/Katyi/mini-reddit/backend/internal/commentvote"
 	"github.com/Katyi/mini-reddit/backend/internal/community"
@@ -106,6 +107,13 @@ func main() {
 	commVoteService := commentvote.NewService(commVoteRepo)
 	commVoteHandler := commentvote.NewHandler(commVoteService)
 
+	// для чата
+	chatRepo := chat.NewRepository(dbpool)
+	chatService := chat.NewService(chatRepo)
+	hub := chat.NewHub(chatRepo)
+	go hub.Run()
+	chatHandler := chat.NewHandler(chatService, hub)
+
 	c := cors.New(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:3000"}, // Адрес твоего будущего фронта
 		AllowedMethods:   []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"},
@@ -141,6 +149,7 @@ func main() {
 	r.HandleFunc("/login", userHandler.Login).Methods("POST")
 	r.HandleFunc("/refresh", userHandler.RefreshToken).Methods("POST")
 	r.HandleFunc("/users/profile/{username}", userHandler.GetProfile).Methods("GET")
+	r.Handle("/users", user.AuthMiddleware(http.HandlerFunc(userHandler.GetAllUsers))).Methods("GET")
 
 	r.Handle("/posts/{id}/comments", user.AuthMiddleware(http.HandlerFunc(commentHandler.GetCommentsByPost))).Methods("GET")
 	r.Handle("/posts/{id}/comments", user.AuthMiddleware(http.HandlerFunc(commentHandler.CreateComment))).Methods("POST")
@@ -156,6 +165,10 @@ func main() {
 	r.Handle("/communities", user.AuthMiddleware(http.HandlerFunc(commHandler.Create))).Methods("POST")
 	r.Handle("/communities/{id}", user.AuthMiddleware(http.HandlerFunc(commHandler.Update))).Methods("PATCH")
 	r.Handle("/communities/{id}", user.AuthMiddleware(http.HandlerFunc(commHandler.Delete))).Methods("DELETE")
+
+	r.Handle("/ws", user.AuthMiddleware(http.HandlerFunc(chatHandler.WSHandler)))
+	r.Handle("/chat/history/{userId}", user.AuthMiddleware(http.HandlerFunc(chatHandler.GetHistory)))
+	r.Handle("/chat/active-users", user.AuthMiddleware(http.HandlerFunc(chatHandler.GetActiveChats))).Methods("GET")
 
 	fmt.Printf("Server is running on :%s\n", port)
 

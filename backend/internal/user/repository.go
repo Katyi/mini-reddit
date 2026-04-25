@@ -47,3 +47,22 @@ func (r *Repository) GetByUsername(ctx context.Context, username string) (User, 
 
 	return u, err
 }
+
+func (r *Repository) GetAllUsers(ctx context.Context) ([]User, error) {
+	query := `SELECT id, username, email, created_at FROM users ORDER BY username ASC`
+	rows, err := r.db.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []User
+	for rows.Next() {
+		var u User
+		if err := rows.Scan(&u.ID, &u.Username, &u.Email, &u.CreatedAt); err != nil {
+			return nil, err
+		}
+		users = append(users, u)
+	}
+	return users, nil
+}

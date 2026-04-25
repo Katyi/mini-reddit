@@ -112,3 +112,7 @@ func (s *Service) LoginUser(ctx context.Context, email, password string) (User, 
 func (s *Service) GetUserProfile(ctx context.Context, username string) (User, error) {
 	return s.repo.GetByUsername(ctx, username)
 }
+
+func (s *Service) GetAllUsers(ctx context.Context) ([]User, error) {
+	return s.repo.GetAllUsers(ctx)
+}

@@ -35,12 +35,13 @@ const PostList = () => {
               className="w-5 h-5 rounded-full border-2 border-orange-100 shadow-sm overflow-hidden"
               alt="avatar"
             />
-            <Link
-              to={`/u/${post.author_username}`}
+            <span
+              // to={`/u/${post.author_username}`}
               className="font-bold text-black  p-0.5 px-2 rounded-full hover:bg-gray-200"
             >
-              u/{post.author_username}
-            </Link>
+              {/* u/{post.author_username} */}
+            </span>
+
             <span>•</span>
             <span>{formatDate(post.created_at)}</span>
           </div>

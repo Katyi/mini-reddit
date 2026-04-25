@@ -119,3 +119,14 @@ func (h *Handler) GetProfile(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(user)
 }
+
+func (h *Handler) GetAllUsers(w http.ResponseWriter, r *http.Request) {
+	users, err := h.service.GetAllUsers(r.Context())
+	if err != nil {
+		http.Error(w, "Could not fetch users", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(users)
+}

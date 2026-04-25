@@ -3,12 +3,16 @@ import { formatDate } from '../../lib/formatDate';
 import { useEffect } from 'react';
 import { useUserStore } from '../../store/userStore';
 import { usePostStore } from '../../store/postStore';
+import { useChatStore } from '../../store/chatStore';
+import { useAuthStore } from '../../store/authStore';
 
 const ProfilePage = () => {
   const { username } = useParams();
   const { fetchProfile, profile, isLoading, error, clearProfile } =
     useUserStore();
+  const { user } = useAuthStore();
   const { posts, fetchPosts, resetPosts } = usePostStore();
+  const openWidget = useChatStore((state) => state.openWidget);
 
   useEffect(() => {
     if (username) fetchProfile(username);
@@ -53,10 +57,20 @@ const ProfilePage = () => {
             alt="avatar"
           />
 
-          <div>
-            <h2 className="text-3xl font-semibold mb-2 text-orange-600">
-              u/{profile.username}
-            </h2>
+          <div className="w-full">
+            <div className="flex flex-wrap items-center justify-between">
+              <h2 className="text-3xl font-semibold text-orange-600">
+                u/{profile.username}
+              </h2>
+              {profile.id !== user?.id && (
+                <button
+                  onClick={() => openWidget(profile.id, profile)}
+                  className="px-4 py-1 bg-orange-600 text-white rounded-full text-sm font-bold h-fit cursor-pointer"
+                >
+                  Send Message
+                </button>
+              )}
+            </div>
             <p className="text-gray-500">
               <span className="font-bold">Created at:</span>{' '}
               {formatDate(profile.created_at)}
