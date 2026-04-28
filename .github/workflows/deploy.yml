@@ -35,6 +35,18 @@ jobs:
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Copy docker-compose.yaml to server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          source: "docker-compose.yaml" # Копируем файл из корня репозитория
+          target: "~/mini-reddit"
+
       - name: Deploy to VPS via SSH
         uses: appleboy/ssh-action@master
         with:
@@ -43,6 +55,9 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           script: |
             cd ~/mini-reddit
+            # Создаем .env из секретов (если он нужен)
+            echo "${{ secrets.ENV_FILE }}" > .env
+            
             docker compose pull
             docker compose up -d
             docker system prune -f

@@ -7,7 +7,7 @@ services:
     container_name: reddit_frontend
     restart: always
     ports:
-      - "3000:80" # Твой сайт будет доступен на localhost:3000
+      - "5005:80" # Твой сайт будет доступен на localhost:3000
     depends_on:
       - backend
   backend:
