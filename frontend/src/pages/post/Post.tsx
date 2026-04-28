@@ -8,8 +8,7 @@ import ConfirmModal from '../../components/confirmModal/ConfirmModal';
 import toast from 'react-hot-toast';
 import ArrowIcon from '../../components/arrowIcon/ArrowIcon';
 import { formatDate } from '../../lib/formatDate';
-
-const BASE_URL = import.meta.env.VITE_BASE_URL || 'http://localhost:3000';
+import { BASE_URL } from '../../api/axios';
 
 const Post = () => {
   const { id, communityName } = useParams();

@@ -1,5 +1,7 @@
 import { create } from 'zustand';
-import api from '../api/axios';
+import api, { BASE_URL } from '../api/axios';
+
+const WS_URL = BASE_URL.replace(/^http/, 'ws');
 
 interface ChatState {
   messages: Message[];
@@ -66,7 +68,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
   connect: (token) => {
     if (get().socket) return;
 
-    const ws = new WebSocket(`ws://localhost:9091/ws?token=${token}`);
+    // const ws = new WebSocket(`ws://localhost:8080/ws?token=${token}`);
+    const ws = new WebSocket(`${WS_URL}/ws?token=${token}`);
 
     ws.onopen = () => {
       console.log('Connected to WS');

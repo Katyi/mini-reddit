@@ -6,8 +6,7 @@ import toast from 'react-hot-toast';
 import { postSchema } from '../../lib/schemas';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-
-const BASE_URL = import.meta.env.VITE_BASE_URL || 'http://localhost:3000';
+import { BASE_URL } from '../../api/axios';
 
 interface Props {
   isOpen: boolean;

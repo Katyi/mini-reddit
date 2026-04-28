@@ -1,8 +1,11 @@
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 
+export const BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+
 const api = axios.create({
-  baseURL: 'http://localhost:9091', // Проверь порт своего Go-сервера
+  baseURL: BASE_URL,
 });
 
 // Добавляем интерцептор (перехватчик) запросов
@@ -50,7 +53,7 @@ api.interceptors.response.use(
         try {
           // Пытаемся получить новый токен
           // Важно: используем чистый axios, а не наш api, чтобы не зациклиться
-          const res = await axios.post('http://localhost:9091/refresh', {
+          const res = await axios.post(`${BASE_URL}/refresh`, {
             refresh_token: refreshToken,
           });
 

@@ -39,12 +39,13 @@ func test(w http.ResponseWriter, r *http.Request) {
 func main() {
 	err := godotenv.Load("../.env")
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		// log.Fatal("Error loading .env file")
+		_ = godotenv.Load()
 	}
 
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "9091" // значение по умолчанию, если в .env пусто
+		port = "8080" // значение по умолчанию, если в .env пусто
 	}
 
 	// connStr := "postgres://user:password@localhost:5432/minireddit?sslmode=disable"
