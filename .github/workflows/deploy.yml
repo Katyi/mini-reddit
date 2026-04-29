@@ -46,8 +46,9 @@ jobs:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_KEY }}
-          source: "docker-compose.yaml,nginx.conf" # Копируем файлы из корня репозитория
+          source: "docker-compose.yaml,frontend/nginx.conf" # Копируем файлы из корня репозитория
           target: "~/mini-reddit"
+          strip_components: 1 # Это важно: файл из папки frontend попадет сразу в корень сервера
 
       - name: Deploy to VPS via SSH
         uses: appleboy/ssh-action@master
