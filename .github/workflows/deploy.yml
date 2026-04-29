@@ -46,7 +46,7 @@ jobs:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_KEY }}
-          source: "docker-compose.yaml" # Копируем файл из корня репозитория
+          source: "docker-compose.yaml,nginx.conf" # Копируем файлы из корня репозитория
           target: "~/mini-reddit"
 
       - name: Deploy to VPS via SSH
@@ -57,6 +57,7 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           script: |
             cd ~/mini-reddit
+            mkdir -p uploads && chmod 777 uploads
             # Создаем .env из секретов (если он нужен)
             echo "${{ secrets.ENV_FILE }}" > .env
             

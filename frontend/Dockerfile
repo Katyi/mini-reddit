@@ -12,7 +12,9 @@ RUN npm run build
 FROM nginx:stable-alpine
 # Копируем билд из первого этапа в папку, которую обслуживает nginx
 COPY --from=build /app/dist /usr/share/nginx/html
-# (Если у тебя старый проект, папка может называться /build вместо /dist)
+
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
 
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
