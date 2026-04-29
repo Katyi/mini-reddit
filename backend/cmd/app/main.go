@@ -116,7 +116,7 @@ func main() {
 	chatHandler := chat.NewHandler(chatService, hub)
 
 	c := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:3000"}, // Адрес твоего будущего фронта
+		AllowedOrigins:   []string{"http://localhost:3000", "http://212.113.120.58:5005"}, // Разрешаем и локалку для тестов, и твой серверный IP
 		AllowedMethods:   []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Authorization", "Content-Type"},
 		AllowCredentials: true,
