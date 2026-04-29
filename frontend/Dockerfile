@@ -5,7 +5,7 @@ COPY package*.json ./
 RUN npm install
 COPY . .
 
-ARG VITE_API_BASE_URL=http://212.113.120.58:8080
+ARG VITE_API_BASE_URL=http://212.113.120.58:8088
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 RUN npm run build
 
