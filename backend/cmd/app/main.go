@@ -120,6 +120,7 @@ func main() {
 		AllowedMethods:   []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Authorization", "Content-Type"},
 		AllowCredentials: true,
+		Debug:            true,
 	})
 
 	r := mux.NewRouter()
