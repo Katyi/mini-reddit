@@ -58,11 +58,13 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           script: |
             cd ~/mini-reddit
+            # Удаляем старую неправильную папку, если она есть
+            rm -rf uploads
             # Создаем структуру как в репозитории и даем права на запись
-            mkdir -p backend/uploads && chmod -R 777 backend/uploads
+            mkdir -p backend/uploads && chmod -R 777 backend/uploads  
             # Создаем .env из секретов (если он нужен)
             echo "${{ secrets.ENV_FILE }}" > .env
             
             docker compose pull
-            docker compose up -d
+            docker compose up -d --force-recreate
             docker system prune -f
