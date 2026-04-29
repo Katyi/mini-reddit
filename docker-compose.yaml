@@ -29,7 +29,7 @@ services:
       - redis
       - kafka
     volumes:
-      - ./uploads:/app/uploads
+      - ./backend/uploads:/app/uploads # Добавили /backend в путь
   db:
     image: postgres:15-alpine
     container_name: reddit_db
