@@ -30,6 +30,8 @@ jobs:
           context: ./frontend
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/mini-reddit-frontend:latest
+          build-args: |
+            VITE_API_BASE_URL=http://212.113.120.58:8088
 
   deploy:
     needs: build-and-push

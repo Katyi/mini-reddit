@@ -1,12 +1,11 @@
 # Этап 1: Сборка
 FROM node:20-alpine AS build
 WORKDIR /app
+ARG VITE_API_BASE_URL
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 COPY package*.json ./
 RUN npm install
 COPY . .
-
-ARG VITE_API_BASE_URL=http://212.113.120.58:8088
-ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 RUN npm run build
 
 # Этап 2: Раздача статики через Nginx
