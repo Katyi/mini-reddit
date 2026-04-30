@@ -79,11 +79,13 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       # ОЧЕНЬ ВАЖНО для Java: ограничиваем кучу (heap)
-      KAFKA_HEAP_OPTS: "-Xms256M -Xmx512M"
+      # KAFKA_HEAP_OPTS: "-Xms256M -Xmx512M"
+      KAFKA_HEAP_OPTS: "-Xms128M -Xmx256M" # Снижаем с 256/512 до 128/256
     deploy:
       resources:
         limits:
-          memory: 600M # Ограничиваем Kafka
+          # memory: 600M # Ограничиваем Kafka
+          memory: 400M # Снижаем лимит с 600M
 
   pgadmin:
     container_name: reddit_pgadmin
