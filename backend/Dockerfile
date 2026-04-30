@@ -19,7 +19,8 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o main ./cmd/app/main.go
 # Этап 2: Финальный образ (максимально легкий)
 FROM alpine:latest
 
-WORKDIR /root/
+# WORKDIR /root/
+WORKDIR /app
 
 # Копируем только скомпилированный бинарник из билдера
 COPY --from=builder /app/main .
