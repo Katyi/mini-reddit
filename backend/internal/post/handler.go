@@ -43,7 +43,13 @@ func (h *Handler) CreatePost(w http.ResponseWriter, r *http.Request) {
 
 		// Генерируем уникальное имя файла (timestamp + оригинальное имя)
 		fileName := fmt.Sprintf("%d-%s", time.Now().Unix(), header.Filename)
-		filePath := "./uploads/" + fileName
+		// filePath := "./uploads/" + fileName
+
+		uploadDir := os.Getenv("UPLOAD_DIR")
+		if uploadDir == "" {
+			uploadDir = "./uploads"
+		}
+		filePath := uploadDir + "/" + fileName
 
 		// Создаем файл на диске
 		dst, err := os.Create(filePath)
@@ -179,7 +185,13 @@ func (h *Handler) UpdatePost(w http.ResponseWriter, r *http.Request) {
 		fileName := fmt.Sprintf("%d-%s", time.Now().Unix(), header.Filename)
 		newImageURL = "/uploads/" + fileName
 
-		dst, _ := os.Create("./uploads/" + fileName)
+		uploadDir := os.Getenv("UPLOAD_DIR")
+		if uploadDir == "" {
+			uploadDir = "./uploads"
+		}
+
+		// dst, _ := os.Create("./uploads/" + fileName)
+		dst, _ := os.Create(uploadDir + "/" + fileName) // Правильно
 		defer dst.Close()
 		io.Copy(dst, file)
 
