@@ -7,10 +7,11 @@ interface UserState {
   isLoading: boolean;
   error: string | null;
   fetchProfile: (username: string) => Promise<void>;
+  updateAvatar: (url: string) => Promise<void>;
   clearProfile: () => void;
 }
 
-export const useUserStore = create<UserState>((set) => ({
+export const useUserStore = create<UserState>((set, get) => ({
   profile: null,
   isLoading: false,
   error: null,
@@ -32,6 +33,19 @@ export const useUserStore = create<UserState>((set) => ({
         error: serverMessage || 'User not found',
         isLoading: false,
       });
+    }
+  },
+
+  updateAvatar: async (url: string) => {
+    try {
+      await api.patch('/users/avatar', { avatar_url: url });
+      const currentProfile = get().profile;
+      if (currentProfile) {
+        set({ profile: { ...currentProfile, avatar_url: url } });
+      }
+    } catch (err) {
+      console.error('Failed to update avatar', err);
+      throw err;
     }
   },
 

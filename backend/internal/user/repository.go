@@ -30,26 +30,26 @@ func (r *Repository) CreateUser(ctx context.Context, user User) (User, error) {
 
 func (r *Repository) GetByEmail(ctx context.Context, email string) (User, error) {
 	var u User
-	query := `SELECT id, username, email, password_hash, created_at FROM users WHERE email = $1`
+	query := `SELECT id, username, email, password_hash, avatar_url, karma, created_at FROM users WHERE email = $1`
 
 	err := r.db.QueryRow(ctx, query, email).
-		Scan(&u.ID, &u.Username, &u.Email, &u.PasswordHash, &u.CreatedAt)
+		Scan(&u.ID, &u.Username, &u.Email, &u.PasswordHash, &u.AvatarURL, &u.Karma, &u.CreatedAt)
 
 	return u, err
 }
 
 func (r *Repository) GetByUsername(ctx context.Context, username string) (User, error) {
 	var u User
-	query := `SELECT id, username, email, created_at FROM users WHERE username = $1`
+	query := `SELECT id, username, email, avatar_url, karma, created_at FROM users WHERE username = $1`
 
 	err := r.db.QueryRow(ctx, query, username).
-		Scan(&u.ID, &u.Username, &u.Email, &u.CreatedAt)
+		Scan(&u.ID, &u.Username, &u.Email, &u.AvatarURL, &u.Karma, &u.CreatedAt)
 
 	return u, err
 }
 
 func (r *Repository) GetAllUsers(ctx context.Context) ([]User, error) {
-	query := `SELECT id, username, email, created_at FROM users ORDER BY username ASC`
+	query := `SELECT id, username, email, avatar_url, karma, created_at FROM users ORDER BY username ASC`
 	rows, err := r.db.Query(ctx, query)
 	if err != nil {
 		return nil, err
@@ -59,10 +59,16 @@ func (r *Repository) GetAllUsers(ctx context.Context) ([]User, error) {
 	var users []User
 	for rows.Next() {
 		var u User
-		if err := rows.Scan(&u.ID, &u.Username, &u.Email, &u.CreatedAt); err != nil {
+		if err := rows.Scan(&u.ID, &u.Username, &u.Email, &u.AvatarURL, &u.Karma, &u.CreatedAt); err != nil {
 			return nil, err
 		}
 		users = append(users, u)
 	}
 	return users, nil
+}
+
+func (r *Repository) UpdateAvatar(ctx context.Context, userID string, avatarURL string) error {
+	query := `UPDATE users SET avatar_url = $1 WHERE id = $2`
+	_, err := r.db.Exec(ctx, query, avatarURL, userID)
+	return err
 }

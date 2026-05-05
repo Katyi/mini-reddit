@@ -117,10 +117,10 @@ func main() {
 
 	c := cors.New(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:3000", "http://212.113.120.58:5005"}, // Разрешаем и локалку для тестов, и твой серверный IP
-		AllowedMethods:   []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"},
+		AllowedMethods:   []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS", "PUT"},
 		AllowedHeaders:   []string{"Authorization", "Content-Type"},
 		AllowCredentials: true,
-		Debug:            true,
+		// Debug:            true,
 	})
 
 	r := mux.NewRouter()
@@ -171,6 +171,7 @@ func main() {
 	r.Handle("/ws", user.AuthMiddleware(http.HandlerFunc(chatHandler.WSHandler)))
 	r.Handle("/chat/history/{userId}", user.AuthMiddleware(http.HandlerFunc(chatHandler.GetHistory)))
 	r.Handle("/chat/active-users", user.AuthMiddleware(http.HandlerFunc(chatHandler.GetActiveChats))).Methods("GET")
+	r.Handle("/users/avatar", user.AuthMiddleware(http.HandlerFunc(userHandler.UpdateAvatar))).Methods("PATCH")
 
 	fmt.Printf("Server is running on :%s\n", port)
 

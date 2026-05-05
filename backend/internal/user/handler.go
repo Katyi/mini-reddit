@@ -130,3 +130,35 @@ func (h *Handler) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(users)
 }
+
+func (h *Handler) UpdateAvatar(w http.ResponseWriter, r *http.Request) {
+	// 1. Извлекаем ID текущего юзера из контекста (спасибо AuthMiddleware)
+	userID, ok := r.Context().Value(UserIDKey).(string)
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// 2. Читаем URL аватарки из тела запроса
+	var input struct {
+		AvatarURL string `json:"avatar_url"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		http.Error(w, "invalid input", http.StatusBadRequest)
+		return
+	}
+
+	// 3. Вызываем сервис
+	err := h.service.UpdateAvatar(r.Context(), userID, input.AvatarURL)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// 4. Отвечаем успехом
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{
+		"message":    "Avatar updated successfully",
+		"avatar_url": input.AvatarURL,
+	})
+}

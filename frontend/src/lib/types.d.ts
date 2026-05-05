@@ -37,6 +37,8 @@ interface User {
   id: string;
   username: string;
   email: string;
+  avatar_url: string;
+  karma: number;
   created_at: string;
 }
 

@@ -5,11 +5,18 @@ import { useUserStore } from '../../store/userStore';
 import { usePostStore } from '../../store/postStore';
 import { useChatStore } from '../../store/chatStore';
 import { useAuthStore } from '../../store/authStore';
+import { getRedditAge } from '../../lib/getRedditAge';
 
 const ProfilePage = () => {
   const { username } = useParams();
-  const { fetchProfile, profile, isLoading, error, clearProfile } =
-    useUserStore();
+  const {
+    fetchProfile,
+    profile,
+    isLoading,
+    error,
+    clearProfile,
+    updateAvatar,
+  } = useUserStore();
   const { user } = useAuthStore();
   const { posts, fetchPosts, resetPosts } = usePostStore();
   const openWidget = useChatStore((state) => state.openWidget);
@@ -27,6 +34,18 @@ const ProfilePage = () => {
       fetchPosts({ authorId: profile.id });
     }
   }, [profile?.id, fetchPosts]);
+
+  const handleAvatarChange = async () => {
+    const randomSeed = Math.random().toString(36).substring(7);
+    const newAvatarUrl = `https://api.dicebear.com/7.x/shapes/svg?seed=${randomSeed}`;
+
+    try {
+      await updateAvatar(newAvatarUrl);
+    } catch (err) {
+      console.log(err);
+      alert('Не удалось обновить аватар');
+    }
+  };
 
   if (isLoading) {
     return (
@@ -50,18 +69,35 @@ const ProfilePage = () => {
       <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm min-h-[calc(100vh-48px-80px-48px)]">
         {/* Profile Information */}
         <div className="flex items-center gap-4">
-          {/* here will be avatar */}
-          <img
-            src={`https://api.dicebear.com/7.x/shapes/svg?seed=${profile?.username}`}
-            className="w-24 h-24 rounded-full border-2 border-orange-100 shadow-sm"
-            alt="avatar"
-          />
+          {/* Avatar and avatar change button */}
+          <div className="relative group">
+            <img
+              src={
+                profile?.avatar_url ||
+                `https://api.dicebear.com/7.x/shapes/svg?seed=${profile?.username}`
+              }
+              className="w-24 h-auto rounded-full border-2 border-orange-100 shadow-sm object-cover"
+              alt="avatar"
+            />
 
+            {profile?.id === user?.id && (
+              <button
+                onClick={handleAvatarChange}
+                className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-white text-xs font-bold"
+              >
+                Change
+              </button>
+            )}
+          </div>
+
+          {/* Title, message button, karma etc...  */}
           <div className="w-full">
             <div className="flex flex-wrap items-center justify-between">
               <h2 className="text-3xl font-semibold text-orange-600">
                 u/{profile.username}
               </h2>
+
+              {/* Message button only for other people's profiles */}
               {profile.id !== user?.id && (
                 <button
                   onClick={() => openWidget(profile.id, profile)}
@@ -71,23 +107,31 @@ const ProfilePage = () => {
                 </button>
               )}
             </div>
-            <p className="text-gray-500">
-              <span className="font-bold">Created at:</span>{' '}
-              {formatDate(profile.created_at)}
-            </p>
+
+            <div className="flex gap-4 items-center">
+              <p className="text-gray-500 text-sm">
+                <span className="font-bold">{profile.karma || 0}</span> karma
+              </p>
+              <p className="text-gray-500 text-sm">
+                <span className="font-bold">
+                  {getRedditAge(profile.created_at)}
+                </span>{' '}
+                Reddit Age
+              </p>
+              <p className="text-gray-500 text-sm">
+                <span className="font-bold">Created at: </span>
+                {formatDate(profile.created_at)}
+              </p>
+            </div>
           </div>
         </div>
-        {/* <ul className="space-y-2 text-gray-700 font-medium ml-6 mt-12">
-          <li>{profile?.email}</li>
-          <li>0 follovers</li>
-          <li>8,234 Karma</li>
-          <li>8 y Reddit Age</li>
-        </ul> */}
 
-        {/* PROFILE'S POSTS */}
+        {/* Profile's posts */}
         <div className="space-y-4">
           <h3 className="text-lg font-bold text-gray-700 mt-4 px-4">
-            Posts by u/{profile.username}
+            {profile.id !== user?.id
+              ? `u/${profile.username}'s posts`
+              : 'My posts'}
           </h3>
 
           {posts.length > 0 ? (

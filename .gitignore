@@ -17,5 +17,5 @@ postgres_data/
 main
 *.exe
 
-frontend/src/store/postStore copy.ts
-frontend/src/store/postStore copy 2.ts
+backend/uploads/*
+!backend/uploads/.gitkeep

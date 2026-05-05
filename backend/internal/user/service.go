@@ -116,3 +116,11 @@ func (s *Service) GetUserProfile(ctx context.Context, username string) (User, er
 func (s *Service) GetAllUsers(ctx context.Context) ([]User, error) {
 	return s.repo.GetAllUsers(ctx)
 }
+
+func (s *Service) UpdateAvatar(ctx context.Context, userID string, avatarURL string) error {
+	// Здесь можно добавить проверку, если нужно (например, не пустая ли строка)
+	if avatarURL == "" {
+		return errors.New("avatar URL cannot be empty")
+	}
+	return s.repo.UpdateAvatar(ctx, userID, avatarURL)
+}
