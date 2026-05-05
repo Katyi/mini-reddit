@@ -89,5 +89,9 @@ jobs:
             docker compose pull
             docker compose up -d --force-recreate --remove-orphans
             sleep 5
-            docker exec -i reddit_db psql -U user -d minireddit -v ON_ERROR_STOP=1 < ~/mini-reddit/backend/migrations/001_add_user_fields.sql
+            # docker exec -i reddit_db psql -U user -d minireddit -v ON_ERROR_STOP=1 < ~/mini-reddit/backend/migrations/001_add_user_fields.sql
+            for f in ~/mini-reddit/backend/migrations/*.sql; do
+              echo "Applying migration: $f"
+              docker exec -i reddit_db psql -U user -d minireddit -v ON_ERROR_STOP=1 < "$f"
+            done
             docker system prune -f
