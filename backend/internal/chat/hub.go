@@ -78,3 +78,11 @@ func (h *Hub) Run() {
 		}
 	}
 }
+
+func (h *Hub) BroadcastToUser(userID string, payload []byte) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if client, ok := h.clients[userID]; ok {
+		client.Send <- payload
+	}
+}

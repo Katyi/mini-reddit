@@ -93,9 +93,16 @@ func main() {
 	commentService := comment.NewService(commentRepo)
 	commentHandler := comment.NewHandler(commentService)
 
+	// для чата
+	chatRepo := chat.NewRepository(dbpool)
+	chatService := chat.NewService(chatRepo)
+	hub := chat.NewHub(chatRepo)
+	go hub.Run()
+	chatHandler := chat.NewHandler(chatService, hub)
+
 	// Для лайков и дизлайков постов
 	voteRepo := vote.NewRepository(dbpool, rdb)
-	voteService := vote.NewService(voteRepo)
+	voteService := vote.NewService(voteRepo, hub)
 	voteHandler := vote.NewHandler(voteService)
 
 	// Для сообществ
@@ -105,15 +112,8 @@ func main() {
 
 	// Для лайков и дизлайков комментариев
 	commVoteRepo := commentvote.NewRepository(dbpool, rdb)
-	commVoteService := commentvote.NewService(commVoteRepo)
+	commVoteService := commentvote.NewService(commVoteRepo, hub)
 	commVoteHandler := commentvote.NewHandler(commVoteService)
-
-	// для чата
-	chatRepo := chat.NewRepository(dbpool)
-	chatService := chat.NewService(chatRepo)
-	hub := chat.NewHub(chatRepo)
-	go hub.Run()
-	chatHandler := chat.NewHandler(chatService, hub)
 
 	c := cors.New(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:3000", "http://212.113.120.58:5005"}, // Разрешаем и локалку для тестов, и твой серверный IP

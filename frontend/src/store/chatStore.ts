@@ -1,12 +1,9 @@
 import { create } from 'zustand';
-import api, { BASE_URL } from '../api/axios';
-
-const WS_URL = BASE_URL.replace(/^http/, 'ws');
+import api from '../api/axios';
+import { useSocketStore } from './socketStore';
 
 interface ChatState {
   messages: Message[];
-  socket: WebSocket | null;
-  isConnected: boolean;
   isWidgetOpen: boolean;
   activeChatUser: string | null;
   users: User[]; // Список людей, с которыми есть чаты
@@ -15,8 +12,6 @@ interface ChatState {
   fetchUsers: () => Promise<void>;
   openWidget: (userId?: string, userData?: User) => void;
   closeWidget: () => void;
-  connect: (token: string) => void;
-  disconnect: () => void;
   sendMessage: (receiverId: string, content: string) => void;
   fetchHistory: (userId: string) => Promise<void>;
   addMessage: (msg: Message) => void;
@@ -24,8 +19,6 @@ interface ChatState {
 
 export const useChatStore = create<ChatState>((set, get) => ({
   messages: [],
-  socket: null,
-  isConnected: false,
   isWidgetOpen: false,
   activeChatUser: null,
   users: [],
@@ -65,48 +58,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   closeWidget: () => set({ isWidgetOpen: false, activeChatUser: null }),
 
-  connect: (token) => {
-    if (get().socket) return;
-
-    // const ws = new WebSocket(`ws://localhost:8080/ws?token=${token}`);
-    const ws = new WebSocket(`${WS_URL}/ws?token=${token}`);
-
-    ws.onopen = () => {
-      console.log('Connected to WS');
-      set({ isConnected: true });
-    };
-
-    ws.onmessage = (event) => {
-      const msg = JSON.parse(event.data);
-      get().addMessage(msg);
-    };
-
-    ws.onclose = () => {
-      set({ isConnected: false, socket: null });
-
-      const currentToken = token; // Замыкаем токен
-      if (currentToken) {
-        setTimeout(() => {
-          get().connect(currentToken);
-        }, 3000);
-      }
-    };
-
-    set({ socket: ws });
-  },
-
-  disconnect: () => {
-    get().socket?.close();
-    set({ socket: null, isConnected: false });
-  },
-
   fetchHistory: async (userId) => {
     const res = await api.get(`/chat/history/${userId}`);
     set({ messages: res.data || [] });
   },
 
   sendMessage: (receiverId, content) => {
-    const socket = get().socket;
+    const socket = useSocketStore.getState().socket; // Берем сокет из нового стора
     if (socket && socket.readyState === WebSocket.OPEN) {
       const msg = { receiver_id: receiverId, content };
       socket.send(JSON.stringify(msg));

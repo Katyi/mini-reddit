@@ -90,3 +90,21 @@ func (r *Repository) Vote(ctx context.Context, userID, commentID string, value i
 
 	return nil
 }
+
+// Метод для получения ID автора комментария
+func (r *Repository) GetCommentAuthor(ctx context.Context, commentID string) (string, error) {
+	var authorID string
+	err := r.db.QueryRow(ctx, "SELECT author_id FROM comments WHERE id = $1", commentID).Scan(&authorID)
+	return authorID, err
+}
+
+// Метод для расчета общей кармы пользователя (такой же, как в vote/repository)
+func (r *Repository) CalculateUserTotalKarma(ctx context.Context, userID string) (int, error) {
+	query := `
+		SELECT 
+			COALESCE((SELECT SUM(rating) FROM posts WHERE author_id = $1), 0) +
+			COALESCE((SELECT SUM(rating) FROM comments WHERE author_id = $1), 0)`
+	var total int
+	err := r.db.QueryRow(ctx, query, userID).Scan(&total)
+	return total, err
+}

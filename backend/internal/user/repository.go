@@ -40,10 +40,19 @@ func (r *Repository) GetByEmail(ctx context.Context, email string) (User, error)
 
 func (r *Repository) GetByUsername(ctx context.Context, username string) (User, error) {
 	var u User
-	query := `SELECT id, username, email, avatar_url, karma, created_at FROM users WHERE username = $1`
+	// Считаем сумму рейтингов постов и комментариев автора
+	query := `
+		SELECT 
+			u.id, u.username, u.email, u.avatar_url, u.created_at,
+			(
+				COALESCE((SELECT SUM(rating) FROM posts WHERE author_id = u.id), 0) +
+				COALESCE((SELECT SUM(rating) FROM comments WHERE author_id = u.id), 0)
+			) as total_karma
+		FROM users u
+		WHERE u.username = $1`
 
 	err := r.db.QueryRow(ctx, query, username).
-		Scan(&u.ID, &u.Username, &u.Email, &u.AvatarURL, &u.Karma, &u.CreatedAt)
+		Scan(&u.ID, &u.Username, &u.Email, &u.AvatarURL, &u.CreatedAt, &u.Karma)
 
 	return u, err
 }

@@ -5,13 +5,13 @@ import Footer from './footer/Footer';
 import Drawer from './drawer/Drawer';
 import AuthModal from './AuthModal/AuthModal';
 import { useAuthStore } from '../store/authStore';
-import { useChatStore } from '../store/chatStore';
 import ChatWidget from './chat/ChatWidget';
+import { useSocketStore } from '../store/socketStore';
 
 const MainLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const { accessToken } = useAuthStore();
-  const { connect, disconnect } = useChatStore();
+  const { connect, disconnect } = useSocketStore();
 
   useEffect(() => {
     if (accessToken) {

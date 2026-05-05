@@ -9,6 +9,7 @@ interface UserState {
   fetchProfile: (username: string) => Promise<void>;
   updateAvatar: (url: string) => Promise<void>;
   clearProfile: () => void;
+  setKarma: (karma: number) => void;
 }
 
 export const useUserStore = create<UserState>((set, get) => ({
@@ -50,4 +51,11 @@ export const useUserStore = create<UserState>((set, get) => ({
   },
 
   clearProfile: () => set({ profile: null, error: null }),
+
+  setKarma: (karma: number) => {
+    const currentProfile = get().profile;
+    if (currentProfile) {
+      set({ profile: { ...currentProfile, karma } });
+    }
+  },
 }));

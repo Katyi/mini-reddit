@@ -87,3 +87,19 @@ func (r *Repository) clearByPattern(ctx context.Context, pattern string) {
 		r.rdb.Del(ctx, iter.Val())
 	}
 }
+
+func (r *Repository) GetPostAuthor(ctx context.Context, postID string) (string, error) {
+	var authorID string
+	err := r.db.QueryRow(ctx, "SELECT author_id FROM posts WHERE id = $1", postID).Scan(&authorID)
+	return authorID, err
+}
+
+func (r *Repository) CalculateUserTotalKarma(ctx context.Context, userID string) (int, error) {
+	query := `
+		SELECT 
+			COALESCE((SELECT SUM(rating) FROM posts WHERE author_id = $1), 0) +
+			COALESCE((SELECT SUM(rating) FROM comments WHERE author_id = $1), 0)`
+	var total int
+	err := r.db.QueryRow(ctx, query, userID).Scan(&total)
+	return total, err
+}
