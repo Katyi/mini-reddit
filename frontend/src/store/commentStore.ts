@@ -30,6 +30,7 @@ interface CommentState {
     commentId: string,
     value: number,
   ) => Promise<void>;
+  updateCommentRating: (commentId: string, newRating: number) => void;
 }
 
 export const useCommentStore = create<CommentState>((set, get) => ({
@@ -169,5 +170,13 @@ export const useCommentStore = create<CommentState>((set, get) => ({
         get().fetchComments(postId);
       }
     }, 500);
+  },
+
+  updateCommentRating: (commentId, newRating) => {
+    set((state) => ({
+      comments: state.comments.map((c) =>
+        c.id === commentId ? { ...c, rating: newRating } : c,
+      ),
+    }));
   },
 }));

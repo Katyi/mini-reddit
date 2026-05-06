@@ -26,14 +26,23 @@ func (s *Service) Vote(ctx context.Context, userID, postID string, value int) (i
 		return 0, err
 	}
 
-	// 2. Получаем автора поста (нужно добавить такой метод в репозиторий или здесь)
+	// 2. Уведомляем ВСЕХ об изменении рейтинга поста ---
+	publicMsg := map[string]interface{}{
+		"type":       "POST_RATING_UPDATE",
+		"post_id":    postID,
+		"new_rating": newRating,
+	}
+	publicPayload, _ := json.Marshal(publicMsg)
+	s.chatHub.Broadcast(publicPayload) // Этого метода может не быть, его надо добавить в Hub
+
+	// 3. Получаем автора поста (нужно добавить такой метод в репозиторий или здесь)
 	authorID, _ := s.repo.GetPostAuthor(ctx, postID)
 
-	// 3. Считаем новую общую карму автора
+	// 4. Считаем новую общую карму автора
 	// Используем тот же метод CalculateTotalKarma, который мы обсуждали для репозитория user
 	totalKarma, _ := s.repo.CalculateUserTotalKarma(ctx, authorID)
 
-	// 4. Отправляем автору уведомление через WebSocket хаб
+	// 5. Отправляем автору уведомление через WebSocket хаб
 	msg := map[string]interface{}{
 		"type":      "KARMA_UPDATE",
 		"new_karma": totalKarma,

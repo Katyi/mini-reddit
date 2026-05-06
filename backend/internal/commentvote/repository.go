@@ -20,7 +20,7 @@ func NewRepository(db *pgxpool.Pool, rdb *redis.Client) *Repository {
 	}
 }
 
-func (r *Repository) Vote(ctx context.Context, userID, commentID string, value int) error {
+func (r *Repository) Vote(ctx context.Context, userID, commentID string, value int) (int, error) {
 	// ШАГ 0: Проверяем существование комментария, его статус (не удален ли)
 	// и получаем post_id для последующей очистки кэша
 	var content string
@@ -28,17 +28,17 @@ func (r *Repository) Vote(ctx context.Context, userID, commentID string, value i
 	// err := r.db.QueryRow(ctx, "SELECT post_id FROM comments WHERE id = $1", commentID).Scan(&postID)
 	err := r.db.QueryRow(ctx, "SELECT content, post_id FROM comments WHERE id = $1", commentID).Scan(&content, &postID)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	// Если комментарий помечен как удаленный, голосовать нельзя
 	if content == "[deleted]" {
-		return fmt.Errorf("cannot vote on a deleted comment")
+		return 0, fmt.Errorf("cannot vote on a deleted comment")
 	}
 
 	tx, err := r.db.Begin(ctx)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	defer tx.Rollback(ctx)
 
@@ -55,23 +55,25 @@ func (r *Repository) Vote(ctx context.Context, userID, commentID string, value i
 			userID, commentID, value)
 	}
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	// Шаг 2: Атомарный пересчет рейтинга в таблице комментариев
 	// Мы суммируем все голоса из comment_votes и записываем результат в comment
-	_, err = tx.Exec(ctx, `
+	var newRating int
+	err = tx.QueryRow(ctx, `
 		UPDATE comments 
 		SET rating = (SELECT COALESCE(SUM(vote_value), 0) FROM comment_votes WHERE comment_id = $1)
-		WHERE id = $1`,
-		commentID)
+		WHERE id = $1
+		RETURNING rating`,
+		commentID).Scan(&newRating)
 
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		return err
+		return 0, err
 	}
 
 	// ШАГ 3: Инвалидация кэша Redis
@@ -88,7 +90,7 @@ func (r *Repository) Vote(ctx context.Context, userID, commentID string, value i
 		}
 	}()
 
-	return nil
+	return newRating, nil
 }
 
 // Метод для получения ID автора комментария

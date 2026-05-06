@@ -38,6 +38,7 @@ interface PostState {
   ) => Promise<void>;
   deletePost: (id: string) => Promise<void>;
   votePost: (postId: string, value: number) => Promise<void>;
+  updatePostRating: (postId: string, newRating: number) => void;
 }
 
 export const usePostStore = create<PostState>((set, get) => ({
@@ -247,5 +248,24 @@ export const usePostStore = create<PostState>((set, get) => ({
         // Тут можно вызвать fetchPost(postId) для принудительной синхронизации при ошибке
       }
     }, 500);
+  },
+
+  // Метод для обновления только рейтинга (вызывается из WebSocket)
+  updatePostRating: (postId, newRating) => {
+    set((state) => ({
+      // Обновляем рейтинг в общем списке постов
+      posts: state.posts.map((p) =>
+        p.id === postId ? { ...p, rating: newRating } : p,
+      ),
+      // Обновляем рейтинг в недавних постах
+      recentPosts: state.recentPosts.map((p) =>
+        p.id === postId ? { ...p, rating: newRating } : p,
+      ),
+      // Если этот пост сейчас открыт на отдельной странице — обновляем и его
+      post:
+        state.post?.id === postId
+          ? { ...state.post, rating: newRating }
+          : state.post,
+    }));
   },
 }));

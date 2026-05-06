@@ -2,7 +2,8 @@ import { create } from 'zustand';
 import { BASE_URL } from '../api/axios';
 import { useChatStore } from './chatStore';
 import { useUserStore } from './userStore';
-// import { usePostStore } from './postStore'; // если понадобится позже
+import { usePostStore } from './postStore';
+import { useCommentStore } from './commentStore';
 
 const WS_URL = BASE_URL.replace(/^http/, 'ws');
 
@@ -34,6 +35,13 @@ export const useSocketStore = create<SocketState>((set, get) => ({
       if (data.type === 'KARMA_UPDATE') {
         // Обновляем карму в userStore
         useUserStore.getState().setKarma(data.new_karma);
+      } else if (data.type === 'POST_RATING_UPDATE') {
+        // Вызываем метод обновления рейтинга в твоем хранилище постов
+        usePostStore.getState().updatePostRating(data.post_id, data.new_rating);
+      } else if (data.type === 'COMMENT_RATING_UPDATE') {
+        useCommentStore
+          .getState()
+          .updateCommentRating(data.comment_id, data.new_rating);
       } else if (data.receiver_id || data.sender_id) {
         // Если есть ID отправителя/получателя — это сообщение чата
         useChatStore.getState().addMessage(data);

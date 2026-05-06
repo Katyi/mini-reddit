@@ -86,3 +86,19 @@ func (h *Hub) BroadcastToUser(userID string, payload []byte) {
 		client.Send <- payload
 	}
 }
+
+func (h *Hub) Broadcast(payload []byte) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	// Просто проходим циклом по всем подключенным и отправляем им данные
+	for _, client := range h.clients {
+		select {
+		case client.Send <- payload:
+		default:
+			// Если канал клиента забит, закрываем его, чтобы не тормозить остальных
+			close(client.Send)
+			delete(h.clients, client.ID)
+		}
+	}
+}

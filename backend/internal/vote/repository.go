@@ -74,8 +74,7 @@ func (r *Repository) Vote(ctx context.Context, userID, postID string, value int)
 	// 4. Инвалидация кэша (оставляем твою логику)
 	r.rdb.Del(ctx, fmt.Sprintf("post:%s:u:%s", postID, userID))
 	r.rdb.Del(ctx, fmt.Sprintf("post:%s:u:guest", postID))
-	r.clearByPattern(ctx, fmt.Sprintf("community:posts:%s:*", communityID))
-	r.clearByPattern(ctx, "posts:all:*")
+	r.clearCache(ctx, communityID, postID)
 
 	return newRating, nil
 }
@@ -86,6 +85,20 @@ func (r *Repository) clearByPattern(ctx context.Context, pattern string) {
 	for iter.Next(ctx) {
 		r.rdb.Del(ctx, iter.Val())
 	}
+}
+
+func (r *Repository) clearCache(ctx context.Context, communityID string, postID string) {
+	// 1. Очищаем кэш конкретного поста
+	// r.rdb.Del(ctx, "post:"+postID)
+	patternPost := fmt.Sprintf("post:%s*", postID)
+	r.clearByPattern(ctx, patternPost)
+
+	// 2. Очищаем все списки постов для этого сообщества (для всех юзеров и гостей)
+	patternComm := fmt.Sprintf("community:posts:%s:*", communityID)
+	r.clearByPattern(ctx, patternComm)
+
+	// 3. Очищаем общий список всех постов (GetAll)
+	r.clearByPattern(ctx, "posts:all:*")
 }
 
 func (r *Repository) GetPostAuthor(ctx context.Context, postID string) (string, error) {

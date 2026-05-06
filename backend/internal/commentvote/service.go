@@ -19,19 +19,28 @@ func NewService(repo *Repository, chatHub *chat.Hub) *Service {
 	}
 }
 
-func (s *Service) Vote(ctx context.Context, userID, commentID string, value int) error {
+func (s *Service) Vote(ctx context.Context, userID, commentID string, value int) (int, error) {
 	// 1. Выполняем голосование
-	err := s.repo.Vote(ctx, userID, commentID, value)
+	newRating, err := s.repo.Vote(ctx, userID, commentID, value)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
-	// 2. Получаем автора комментария и считаем его новую карму
+	// 2. Уведомляем ВСЕХ об изменении рейтинга комментария
+	publicMsg := map[string]interface{}{
+		"type":       "COMMENT_RATING_UPDATE",
+		"comment_id": commentID,
+		"new_rating": newRating,
+	}
+	publicPayload, _ := json.Marshal(publicMsg)
+	s.chatHub.Broadcast(publicPayload) // Отправляем всем онлайн-пользователям
+
+	// 3. Получаем автора комментария и считаем его новую карму
 	authorID, err := s.repo.GetCommentAuthor(ctx, commentID)
 	if err == nil {
 		totalKarma, err := s.repo.CalculateUserTotalKarma(ctx, authorID)
 		if err == nil {
-			// 3. Отправляем уведомление автору через WebSocket
+			// Отправляем уведомление автору через WebSocket
 			msg := map[string]interface{}{
 				"type":      "KARMA_UPDATE",
 				"new_karma": totalKarma,
@@ -41,5 +50,5 @@ func (s *Service) Vote(ctx context.Context, userID, commentID string, value int)
 		}
 	}
 
-	return nil
+	return newRating, nil
 }

@@ -43,7 +43,7 @@ func (h *Handler) Vote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.service.Vote(r.Context(), userID, CommentID, input.Value)
+	newRating, err := h.service.Vote(r.Context(), userID, CommentID, input.Value)
 	if err != nil {
 		fmt.Printf("VOTING ERROR: %v\n", err)
 		http.Error(w, "failed to vote", http.StatusInternalServerError)
@@ -56,5 +56,6 @@ func (h *Handler) Vote(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"status":     "success",
 		"comment_id": CommentID,
+		"new_rating": newRating,
 	})
 }
