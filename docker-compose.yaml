@@ -24,6 +24,7 @@ services:
       - DB_URL=${DB_URL}
       - REDIS_URL=${REDIS_URL}
       - KAFKA_URL=${KAFKA_URL}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
     depends_on:
       - db
       - redis

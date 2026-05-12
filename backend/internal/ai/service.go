@@ -14,8 +14,18 @@ type Service struct {
 }
 
 func NewService() *Service {
+	key := os.Getenv("OPENROUTER_API_KEY")
+
+	// ВРЕМЕННЫЙ ТЕСТ: выведет длину ключа и первые 5 символов
+	if key == "" {
+		fmt.Println("CRITICAL: OPENROUTER_API_KEY is EMPTY!")
+	} else {
+		fmt.Printf("API Key loaded. Length: %d, Starts with: %s...\n", len(key), key[:5])
+	}
+
 	return &Service{
-		apiKey: os.Getenv("OPENROUTER_API_KEY"),
+		// apiKey: os.Getenv("OPENROUTER_API_KEY"),
+		apiKey: key,
 		apiUrl: "https://openrouter.ai/api/v1/chat/completions",
 	}
 }
