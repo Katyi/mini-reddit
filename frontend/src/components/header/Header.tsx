@@ -2,7 +2,7 @@ import { Link, useParams } from 'react-router-dom';
 import burger from '../../assets/icons/burger.svg';
 import addIcon from '../../assets/icons/addIcon.svg';
 import chatIcon from '../../assets/icons/chatIcon.svg';
-import aiIcon from '../../assets/icons/AI.svg';
+import aiIcon from '../../assets/icons/ai.svg';
 import { useAuthStore } from '../../store/authStore';
 import { useState } from 'react';
 import PostModal from '../postModal/PostModal';
