@@ -3,7 +3,9 @@ import { BASE_URL } from '../api/axios';
 import { useChatStore } from './chatStore';
 import { useUserStore } from './userStore';
 import { usePostStore } from './postStore';
+import { useAIChatStore } from './aiChatStore';
 import { useCommentStore } from './commentStore';
+import { AI_BOT_ID } from '../constants/aiBotID';
 
 const WS_URL = BASE_URL.replace(/^http/, 'ws');
 
@@ -42,6 +44,11 @@ export const useSocketStore = create<SocketState>((set, get) => ({
         useCommentStore
           .getState()
           .updateCommentRating(data.comment_id, data.new_rating);
+      } else if (
+        data.sender_id === AI_BOT_ID ||
+        data.receiver_id === AI_BOT_ID
+      ) {
+        useAIChatStore.getState().addAIMessage(data);
       } else if (data.receiver_id || data.sender_id) {
         // Если есть ID отправителя/получателя — это сообщение чата
         useChatStore.getState().addMessage(data);

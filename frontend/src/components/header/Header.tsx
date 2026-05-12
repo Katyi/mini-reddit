@@ -2,11 +2,13 @@ import { Link, useParams } from 'react-router-dom';
 import burger from '../../assets/icons/burger.svg';
 import addIcon from '../../assets/icons/addIcon.svg';
 import chatIcon from '../../assets/icons/chatIcon.svg';
+import aiIcon from '../../assets/icons/AI.svg';
 import { useAuthStore } from '../../store/authStore';
 import { useState } from 'react';
 import PostModal from '../postModal/PostModal';
 import { usePostStore } from '../../store/postStore';
 import { useChatStore } from '../../store/chatStore';
+import { useAIChatStore } from '../../store/aiChatStore';
 
 interface HeaderProps {
   isSidebarOpen: boolean;
@@ -22,6 +24,8 @@ const Header = ({ isSidebarOpen, toggleSidebar }: HeaderProps) => {
   const { searchQuery, setSearchQuery } = usePostStore();
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
   const openWidget = useChatStore((state) => state.openWidget);
+
+  const { toggleAI } = useAIChatStore();
 
   return (
     <header className="sticky top-0 z-50 h-full gap-2 lg:gap-0 py-2 px-4 flex flex-wrap justify-between items-center shadow-2xs bg-white">
@@ -61,6 +65,15 @@ const Header = ({ isSidebarOpen, toggleSidebar }: HeaderProps) => {
       <div className="flex items-center gap-2">
         {user ? (
           <div className="flex items-center gap-1.5">
+            {/* Button for AI */}
+            <button
+              onClick={toggleAI}
+              className="p-2 hover:bg-gray-200 rounded-full cursor-pointer"
+              title="Ask AI"
+            >
+              <img src={aiIcon} alt="aiIcon" width={23} height={23} />
+            </button>
+            {/* Button for chat */}
             <button
               onClick={() => openWidget()}
               className="p-2 hover:bg-gray-200 rounded-full cursor-pointer"
@@ -77,14 +90,17 @@ const Header = ({ isSidebarOpen, toggleSidebar }: HeaderProps) => {
               Create
             </button>
 
-            <Link to={`/u/${user.username}`}>
+            <Link
+              to={`/u/${user.username}`}
+              className="px-4 py-0.5 rounded-full hover:bg-gray-200"
+            >
               <span className="text-xl font-semibold text-orange-600">
                 u/{user.username}
               </span>
             </Link>
             <button
               onClick={logout}
-              className="px-4 py-1 border-2 border-orange-600 rounded-full text-sm font-bold cursor-pointer"
+              className="px-4 py-1 border-2 border-orange-600 hover:bg-gray-200 rounded-full text-sm font-bold cursor-pointer"
             >
               Logout
             </button>

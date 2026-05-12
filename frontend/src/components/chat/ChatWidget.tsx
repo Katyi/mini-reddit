@@ -3,6 +3,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useState, useEffect, useRef } from 'react';
 import { formatDate } from '../../lib/formatDate';
 import closeIcon from '../../assets/icons/closeIcon.svg';
+import { AI_BOT_ID } from '../../constants/aiBotID';
 
 const ChatWidget = () => {
   const {
@@ -38,7 +39,8 @@ const ChatWidget = () => {
   const filteredUsers = users.filter(
     (u) =>
       u.username.toLowerCase().includes(searchTerm.toLowerCase()) &&
-      u.id !== user.id,
+      u.id !== user.id &&
+      u.id !== AI_BOT_ID,
   );
 
   const activeUser = users.find((u) => u.id === activeChatUser);

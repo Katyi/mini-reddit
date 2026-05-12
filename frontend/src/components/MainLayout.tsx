@@ -7,6 +7,7 @@ import AuthModal from './AuthModal/AuthModal';
 import { useAuthStore } from '../store/authStore';
 import ChatWidget from './chat/ChatWidget';
 import { useSocketStore } from '../store/socketStore';
+import AIChatAssistant from './AIChatAssistant/AIChatAssistant';
 
 const MainLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -44,6 +45,7 @@ const MainLayout = () => {
       <Footer />
       <AuthModal />
       <ChatWidget />
+      <AIChatAssistant />
     </div>
   );
 };

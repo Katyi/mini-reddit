@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/Katyi/mini-reddit/backend/internal/ai"
 	"github.com/Katyi/mini-reddit/backend/internal/chat"
 	"github.com/Katyi/mini-reddit/backend/internal/comment"
 	"github.com/Katyi/mini-reddit/backend/internal/commentvote"
@@ -96,7 +97,8 @@ func main() {
 	// для чата
 	chatRepo := chat.NewRepository(dbpool)
 	chatService := chat.NewService(chatRepo)
-	hub := chat.NewHub(chatRepo)
+	aiService := ai.NewService()
+	hub := chat.NewHub(chatRepo, aiService)
 	go hub.Run()
 	chatHandler := chat.NewHandler(chatService, hub)
 
