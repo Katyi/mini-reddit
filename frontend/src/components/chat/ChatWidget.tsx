@@ -22,6 +22,7 @@ const ChatWidget = () => {
   const [text, setText] = useState('');
   const [searchTerm, setSearchTerm] = useState(''); // Для поиска
   const scrollRef = useRef<HTMLDivElement>(null);
+  const widgetRef = useRef<HTMLDivElement>(null); // Реф для самого окна виджета
 
   useEffect(() => {
     if (isWidgetOpen) fetchUsers();
@@ -32,6 +33,31 @@ const ChatWidget = () => {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  // Закрытие по ESC
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeWidget();
+    };
+    if (isWidgetOpen) window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [isWidgetOpen, closeWidget]);
+
+  // Закрытие по клику ВНЕ виджета
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      // Если виджет открыт и клик был НЕ по widgetRef
+      if (
+        isWidgetOpen &&
+        widgetRef.current &&
+        !widgetRef.current.contains(event.target as Node)
+      ) {
+        closeWidget();
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isWidgetOpen, closeWidget]);
 
   if (!isWidgetOpen || !user) return null;
 
@@ -47,7 +73,10 @@ const ChatWidget = () => {
 
   return (
     // Увеличиваем ширину до 600px для двух колонок
-    <div className="fixed bottom-2 right-6 w-[650px] h-[500px] bg-white shadow-2xl rounded-xl border border-gray-300 flex overflow-hidden z-[9999]">
+    <div
+      className="fixed bottom-2 right-6 w-[650px] h-[500px] bg-white shadow-2xl rounded-xl border border-gray-300 flex overflow-hidden z-[9999]"
+      ref={widgetRef}
+    >
       {/* ЛЕВАЯ КОЛОНКА: Список пользователей */}
       <div className="w-1/3 border-r border-gray-200 flex flex-col bg-white">
         <div className="p-2.5 border-b border-gray-300 bg-white">

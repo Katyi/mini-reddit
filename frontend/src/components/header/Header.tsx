@@ -52,8 +52,8 @@ const Header = ({ isSidebarOpen, toggleSidebar }: HeaderProps) => {
           <input
             type="text"
             placeholder={`Search in ${communityName ? 'r/' + communityName : 'all posts'}...`}
-            className="w-full pl-10 pr-4 py-1.5 bg-gray-100 border-none rounded-full text-sm focus:ring-2 outline-none
-          focus:ring-orange-500 transition-all"
+            className="w-full pl-10 pr-4 py-1.5 bg-gray-100 border-none rounded-full text-sm 
+             focus:ring-1 focus:ring-orange-500 outline-none transition-all"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />

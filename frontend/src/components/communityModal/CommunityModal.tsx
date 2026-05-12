@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useCommunityStore } from '../../store/communityStore';
 import { communitySchema } from '../../lib/schemas';
 import axios from 'axios';
@@ -29,6 +29,18 @@ const CommunityModal: React.FC<Props> = ({ isOpen, onClose, initialData }) => {
 
   const { createCommunity, updateCommunity } = useCommunityStore();
   const isEditMode = !!initialData;
+
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+
+    if (isOpen) {
+      window.addEventListener('keydown', handleEsc);
+    }
+
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -68,8 +80,14 @@ const CommunityModal: React.FC<Props> = ({ isOpen, onClose, initialData }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/50">
-      <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl">
+    <div
+      className="fixed inset-0 z-[110] flex items-center justify-center bg-black/50"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex justify-between items-center p-4 border-b">
           <h2 className="text-xl font-bold text-gray-900">
             {isEditMode ? `Edit r/${initialData?.name}` : 'Create a Community'}

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { usePostStore } from '../../store/postStore';
 import { useCommunityStore } from '../../store/communityStore';
 import closeIcon from '../../assets/icons/closeIcon.svg';
@@ -43,6 +43,18 @@ const PostModal: React.FC<Props> = ({ isOpen, onClose, initialData }) => {
   const { createPost, updatePost } = usePostStore();
   const { communities } = useCommunityStore();
   const isEditMode = !!initialData;
+
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+
+    if (isOpen) {
+      window.addEventListener('keydown', handleEsc);
+    }
+
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -116,8 +128,14 @@ const PostModal: React.FC<Props> = ({ isOpen, onClose, initialData }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-xl">
+    <div
+      className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="p-4 border-b flex justify-between items-center">
           <h2 className="text-xl font-bold">
             {isEditMode ? 'Edit Post' : 'Create a Post'}

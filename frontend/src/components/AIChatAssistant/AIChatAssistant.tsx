@@ -10,6 +10,7 @@ const AIChatAssistant = () => {
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const chatRef = useRef<HTMLDivElement>(null); // Добавляем реф
 
   // Скролл вниз
   useEffect(() => {
@@ -34,6 +35,30 @@ const AIChatAssistant = () => {
     return () => socket.removeEventListener('message', handleMessage);
   }, [socket]);
 
+  // Закрытие по ESC
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isAIOpen) toggleAI();
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [isAIOpen, toggleAI]);
+
+  // Закрытие по клику ВНЕ
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        isAIOpen &&
+        chatRef.current &&
+        !chatRef.current.contains(event.target as Node)
+      ) {
+        toggleAI();
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isAIOpen, toggleAI]);
+
   const sendToAI = () => {
     if (!input.trim() || !socket) return;
 
@@ -47,7 +72,10 @@ const AIChatAssistant = () => {
   if (!isAIOpen) return null;
 
   return (
-    <div className="fixed bottom-2 right-6 w-96 bg-white shadow-2xl rounded-xl border-t-4 border-orange-500 flex flex-col z-[9999] overflow-hidden">
+    <div
+      className="fixed bottom-2 right-6 w-96 bg-white shadow-2xl rounded-xl border-t-4 border-orange-500 flex flex-col z-[9999] overflow-hidden"
+      ref={chatRef} // ПРИВЯЗЫВАЕМ РЕФ
+    >
       <div className="bg-gray-50 p-3 border-b flex justify-between items-center">
         <h3 className="font-bold text-gray-700 flex items-center gap-2">
           🤖 AI Assistant
