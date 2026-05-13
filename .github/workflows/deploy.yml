@@ -32,7 +32,7 @@ jobs:
           tags: ${{ secrets.DOCKER_USERNAME }}/mini-reddit-frontend:latest
           build-args: |
             # VITE_API_BASE_URL=http://212.113.120.58:8088
-            VITE_API_BASE_URL=http://mini-reddit.ru/api
+            VITE_API_BASE_URL=https://mini-reddit.ru/api
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
