@@ -118,7 +118,12 @@ func main() {
 	commVoteHandler := commentvote.NewHandler(commVoteService)
 
 	c := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:3000", "http://212.113.120.58:5005"}, // Разрешаем и локалку для тестов, и твой серверный IP
+		AllowedOrigins: []string{
+			"http://localhost:3000",
+			"http://mini-reddit.ru",  // домен
+			"https://mini-reddit.ru", // c запасом на будущее (HTTPS)
+			"http://212.113.120.58",  // IP
+		},
 		AllowedMethods:   []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS", "PUT"},
 		AllowedHeaders:   []string{"Authorization", "Content-Type"},
 		AllowCredentials: true,
