@@ -178,6 +178,8 @@ func main() {
 	r.Handle("/ws", user.AuthMiddleware(http.HandlerFunc(chatHandler.WSHandler)))
 	r.Handle("/chat/history/{userId}", user.AuthMiddleware(http.HandlerFunc(chatHandler.GetHistory)))
 	r.Handle("/chat/active-users", user.AuthMiddleware(http.HandlerFunc(chatHandler.GetActiveChats))).Methods("GET")
+	r.Handle("/chat/read/{userId}", user.AuthMiddleware(http.HandlerFunc(chatHandler.MarkAsRead))).Methods("POST")
+
 	r.Handle("/users/avatar", user.AuthMiddleware(http.HandlerFunc(userHandler.UpdateAvatar))).Methods("PATCH")
 
 	fmt.Printf("Server is running on :%s\n", port)

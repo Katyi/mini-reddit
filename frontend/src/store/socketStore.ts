@@ -51,9 +51,13 @@ export const useSocketStore = create<SocketState>((set, get) => ({
         useAIChatStore.getState().addAIMessage(data);
       } else if (data.receiver_id || data.sender_id) {
         // Если есть ID отправителя/получателя — это сообщение чата
-        useChatStore.getState().addMessage(data);
+        const chatStore = useChatStore.getState();
+        chatStore.addMessage(data);
+
+        if (data.sender_id === chatStore.activeChatUser) {
+          chatStore.markAsRead(data.sender_id);
+        }
       }
-      // Здесь можно добавлять новые типы: например, уведомления о новых постах
     };
 
     ws.onclose = () => {

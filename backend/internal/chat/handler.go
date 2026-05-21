@@ -137,3 +137,25 @@ func (h *Handler) GetActiveChats(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
+// MarkAsRead — вызывается фронтендом при открытии чата
+func (h *Handler) MarkAsRead(w http.ResponseWriter, r *http.Request) {
+	// 1. Тот, КТО читает (извлекаем из токена)
+	myID, ok := r.Context().Value(user.UserIDKey).(string)
+	if !ok || myID == "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// 2. Тот, ЧЬИ сообщения читают (из URL: /chat/read/{userId})
+	vars := mux.Vars(r)
+	senderID := vars["userId"] // ID того, чьи сообщения мы прочитали
+
+	// ВАЖНО: Первый аргумент - отправитель (он), второй - получатель (я)
+	if err := h.service.MarkAsRead(r.Context(), senderID, myID); err != nil {
+		http.Error(w, "Failed to mark as read: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}

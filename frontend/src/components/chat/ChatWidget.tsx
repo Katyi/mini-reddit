@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from 'react';
 import { formatDate } from '../../lib/formatDate';
 import closeIcon from '../../assets/icons/closeIcon.svg';
 import { AI_BOT_ID } from '../../constants/aiBotID';
+import backArrow from '../../assets/icons/back-arrow.svg';
+import { useUserStore } from '../../store/userStore';
 
 const ChatWidget = () => {
   const {
@@ -17,6 +19,7 @@ const ChatWidget = () => {
     messages,
     sendMessage,
   } = useChatStore();
+  const { users: allUsers, fetchAllUsers } = useUserStore();
 
   const { user } = useAuthStore();
   const [text, setText] = useState('');
@@ -25,8 +28,28 @@ const ChatWidget = () => {
   const widgetRef = useRef<HTMLDivElement>(null); // Реф для самого окна виджета
 
   useEffect(() => {
-    if (isWidgetOpen) fetchUsers();
-  }, [isWidgetOpen, fetchUsers]);
+    if (isWidgetOpen) {
+      fetchUsers();
+      fetchAllUsers();
+    }
+  }, [isWidgetOpen, fetchUsers, fetchAllUsers]);
+
+  // open first user in userlist in chat when open chat
+  useEffect(() => {
+    // Проверяем ширину экрана: 640px — это стандартный порог 'sm' в Tailwind
+    const isDesktop = window.innerWidth >= 768;
+
+    // Добавляем условие 'isDesktop' в проверку
+    if (isWidgetOpen && !activeChatUser && users.length > 0 && isDesktop) {
+      const firstAvailableUser = users.find(
+        (u) => u.id !== user?.id && u.id !== AI_BOT_ID,
+      );
+
+      if (firstAvailableUser) {
+        openWidget(firstAvailableUser.id);
+      }
+    }
+  }, [isWidgetOpen, users, activeChatUser, openWidget, user?.id]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -62,24 +85,51 @@ const ChatWidget = () => {
   if (!isWidgetOpen || !user) return null;
 
   // Фильтруем пользователей по поиску
-  const filteredUsers = users.filter(
+  let displayedUsers = users.filter(
     (u) =>
       u.username.toLowerCase().includes(searchTerm.toLowerCase()) &&
       u.id !== user.id &&
       u.id !== AI_BOT_ID,
   );
 
-  const activeUser = users.find((u) => u.id === activeChatUser);
+  const isGlobalSearch =
+    displayedUsers.length === 0 && searchTerm.trim() !== '';
+
+  if (isGlobalSearch) {
+    displayedUsers = allUsers.filter(
+      (u) =>
+        u.username.toLowerCase().includes(searchTerm.toLowerCase()) &&
+        u.id !== user.id &&
+        u.id !== AI_BOT_ID,
+    );
+  }
+
+  const activeUser = allUsers.find((u) => u.id === activeChatUser);
 
   return (
     // Увеличиваем ширину до 600px для двух колонок
     <div
-      className="fixed bottom-2 right-6 w-[650px] h-[500px] bg-white shadow-2xl rounded-xl border border-gray-300 flex overflow-hidden z-[9999]"
+      className="fixed inset-0 z-100 bg-white sm:inset-auto sm:right-6 sm:bottom-2 sm:w-[600px] sm:h-[500px] sm:rounded-xl sm:shadow-2xl flex border border-gray-300 overflow-hidden"
       ref={widgetRef}
     >
       {/* ЛЕВАЯ КОЛОНКА: Список пользователей */}
-      <div className="w-1/3 border-r border-gray-200 flex flex-col bg-white">
-        <div className="p-2.5 border-b border-gray-300 bg-white">
+      <div
+        className={`
+        ${activeChatUser ? 'hidden sm:flex' : 'flex'} 
+        w-full sm:w-1/3 flex-col border-r border-gray-200 bg-white
+      `}
+      >
+        {/* header для мобилок */}
+        <div className="p-2.5 border-b border-gray-300 flex sm:hidden justify-between items-center bg-white">
+          <span className="font-bold text-sm">Select a chat</span>
+          <button
+            onClick={closeWidget}
+            className="p-1 text-gray-400 hover:text-black cursor-pointer rounded-full hover:bg-gray-200"
+          >
+            <img src={closeIcon} alt="close" className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="p-2.5 border-b border-gray-300 bg-white flex gap-4">
           <input
             type="text"
             placeholder="Search users..."
@@ -89,19 +139,33 @@ const ChatWidget = () => {
           />
         </div>
         <div className="flex flex-col overflow-y-auto items-center gap-1 my-1">
-          {filteredUsers.length > 0 ? (
-            filteredUsers.map((u) => (
+          {displayedUsers.length > 0 ? (
+            displayedUsers.map((u) => (
               <button
                 key={u.id}
-                onClick={() => openWidget(u.id)}
+                onClick={() => {
+                  openWidget(u.id);
+                  setSearchTerm('');
+                }}
                 className={`w-[calc(100%-8px)] flex items-center gap-3 p-3 rounded-lg hover:bg-orange-50 transition-colors border-b border-orange-100 text-left cursor-pointer
                   ${activeChatUser === u.id ? 'bg-orange-50 border-r-2 border-r-orange-500' : ''}`}
               >
-                <div className="w-8 h-8 bg-orange-500 rounded-full flex-shrink-0 flex items-center justify-center text-white text-xs font-bold">
+                <div
+                  className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-white text-xs font-bold
+                  ${isGlobalSearch ? 'bg-gray-400' : 'bg-orange-500'}`}
+                >
                   {u.username[0].toUpperCase()}
                 </div>
-                <div className="overflow-hidden">
+                <div className="flex justify-between items-center w-full">
                   <p className="text-sm font-medium truncate">u/{u.username}</p>
+                  {isGlobalSearch && (
+                    <p className="text-[10px] text-gray-400">Found globally</p>
+                  )}
+                  {u.unread_count > 0 && (
+                    <span className="flex items-center justify-center bg-gray-500 text-white text-[10px] font-bold min-w-5 h-5 px-1 rounded-full">
+                      {u.unread_count}
+                    </span>
+                  )}
                 </div>
               </button>
             ))
@@ -117,10 +181,22 @@ const ChatWidget = () => {
       </div>
 
       {/* ПРАВАЯ КОЛОНКА: Окно чата */}
-      <div className="flex-1 flex flex-col bg-white">
+      <div
+        className={`
+        ${!activeChatUser ? 'hidden sm:flex' : 'flex'} 
+        flex-1 flex-col bg-white
+      `}
+      >
         {/* Header чата */}
         <div className="p-2.5 border-b border-gray-300 flex justify-between items-center bg-white">
           <div className="flex items-center gap-2">
+            {/* Кнопка "Назад" для мобилок */}
+            <button
+              onClick={() => openWidget(undefined)} // Сбрасываем активного юзера
+              className="flex justify-center items-center sm:hidden py-1 pl-2 pr-0 text-gray-400 hover:text-black hover:bg-gray-200 rounded-full cursor-pointer"
+            >
+              <img src={backArrow} alt="backArrow" className="w-5 h-5" />
+            </button>
             <span className="font-bold text-sm">
               {activeUser
                 ? `u/${activeUser.username}`

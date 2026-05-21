@@ -97,3 +97,31 @@ func (r *Repository) GetActiveChats(ctx context.Context, userID string) ([]user.
 	}
 	return users, nil
 }
+
+// GetUnreadCounts возвращает карту [sender_id] -> количество непрочитанных для конкретного пользователя
+func (r *Repository) GetUnreadCounts(ctx context.Context, userID string) (map[string]int, error) {
+	query := `
+		SELECT sender_id, COUNT(*) 
+		FROM messages 
+		WHERE receiver_id = $1 
+		AND is_read = false 
+		AND sender_id != '00000000-0000-0000-0000-000000000000'
+		GROUP BY sender_id`
+
+	rows, err := r.db.Query(ctx, query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	counts := make(map[string]int)
+	for rows.Next() {
+		var senderID string
+		var count int
+		if err := rows.Scan(&senderID, &count); err != nil {
+			return nil, err
+		}
+		counts[senderID] = count
+	}
+	return counts, nil
+}

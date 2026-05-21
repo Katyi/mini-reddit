@@ -40,6 +40,7 @@ interface User {
   avatar_url: string;
   karma: number;
   created_at: string;
+  unread_count: number;
 }
 
 interface BackendError {

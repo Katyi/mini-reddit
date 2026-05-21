@@ -87,6 +87,7 @@ func (h *Hub) Run() {
 						SenderID:   AI_BOT_ID,
 						ReceiverID: userMsg.SenderID,
 						Content:    answer,
+						IsRead:     true,
 					}
 
 					// Сохраняем ответ бота в БД

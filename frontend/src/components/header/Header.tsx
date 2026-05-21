@@ -4,7 +4,7 @@ import addIcon from '../../assets/icons/addIcon.svg';
 import chatIcon from '../../assets/icons/chatIcon.svg';
 import aiIcon from '../../assets/icons/ai.svg';
 import { useAuthStore } from '../../store/authStore';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import PostModal from '../postModal/PostModal';
 import { usePostStore } from '../../store/postStore';
 import { useChatStore } from '../../store/chatStore';
@@ -23,9 +23,16 @@ const Header = ({ isSidebarOpen, toggleSidebar }: HeaderProps) => {
   const { user, openModal, logout } = useAuthStore();
   const { searchQuery, setSearchQuery } = usePostStore();
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
-  const openWidget = useChatStore((state) => state.openWidget);
+  const { openWidget, getTotalUnreadCount, fetchUsers } = useChatStore();
+  const totalUnread = getTotalUnreadCount();
 
   const { toggleAI } = useAIChatStore();
+
+  useEffect(() => {
+    if (user) {
+      fetchUsers();
+    }
+  }, [user, fetchUsers]);
 
   return (
     <header className="sticky top-0 z-50 h-full gap-2 lg:gap-0 py-2 px-4 flex flex-wrap justify-between items-center shadow-2xs bg-white">
@@ -64,7 +71,7 @@ const Header = ({ isSidebarOpen, toggleSidebar }: HeaderProps) => {
       {/* RIGHT SIDE WITH CREATE USERNAME LOGOUT LOGIN... */}
       <div className="flex items-center gap-2">
         {user ? (
-          <div className="flex items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-0.5">
             {/* Button for AI */}
             <button
               onClick={toggleAI}
@@ -76,10 +83,16 @@ const Header = ({ isSidebarOpen, toggleSidebar }: HeaderProps) => {
             {/* Button for chat */}
             <button
               onClick={() => openWidget()}
-              className="p-2 hover:bg-gray-200 rounded-full cursor-pointer"
+              className="p-2 hover:bg-gray-200 rounded-full cursor-pointer relative"
               title="Chat"
             >
               <img src={chatIcon} alt="chatIcon" width={20} height={24} />
+
+              {totalUnread > 0 && (
+                <span className="absolute -top-1 -right-1 flex items-center justify-center bg-orange-600 text-white text-[10px] font-bold min-w-[18px] h-[18px] px-1 rounded-full border-2 border-white">
+                  {totalUnread > 99 ? '99+' : totalUnread}
+                </span>
+              )}
             </button>
 
             <button

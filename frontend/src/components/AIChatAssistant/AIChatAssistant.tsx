@@ -73,10 +73,11 @@ const AIChatAssistant = () => {
 
   return (
     <div
-      className="fixed bottom-2 right-6 w-96 bg-white shadow-2xl rounded-xl border-t-4 border-orange-500 flex flex-col z-[9999] overflow-hidden"
-      ref={chatRef} // ПРИВЯЗЫВАЕМ РЕФ
+      className="fixed inset-0 z-100 flex flex-col bg-white shadow-2xl border-orange-500 overflow-hidden
+       sm:inset-auto sm:bottom-2 sm:right-6 sm:w-96 sm:h-[500px]  sm:rounded-xl sm:border-t-4"
+      ref={chatRef}
     >
-      <div className="bg-gray-50 p-3 border-b flex justify-between items-center">
+      <div className="bg-gray-50 p-3 border-b flex justify-between items-center shrink-0">
         <h3 className="font-bold text-gray-700 flex items-center gap-2">
           🤖 AI Assistant
         </h3>
@@ -90,7 +91,7 @@ const AIChatAssistant = () => {
 
       <div
         ref={scrollRef}
-        className="h-80 overflow-y-auto p-4 space-y-4 bg-gray-50"
+        className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50"
       >
         {aiMessages.length === 0 && (
           <p className="text-center text-gray-400 text-sm mt-10">
@@ -124,7 +125,7 @@ const AIChatAssistant = () => {
         )}
       </div>
 
-      <div className="p-3 bg-white border-t flex gap-2 items-center">
+      <div className="p-3 bg-white border-t flex gap-2 items-center shrink-0">
         <input
           autoFocus
           value={input}

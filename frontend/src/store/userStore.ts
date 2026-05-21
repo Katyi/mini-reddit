@@ -4,9 +4,11 @@ import axios from 'axios';
 
 interface UserState {
   profile: User | null;
+  users: User[];
   isLoading: boolean;
   error: string | null;
   fetchProfile: (username: string) => Promise<void>;
+  fetchAllUsers: () => Promise<void>;
   updateAvatar: (url: string) => Promise<void>;
   clearProfile: () => void;
   setKarma: (karma: number) => void;
@@ -14,6 +16,7 @@ interface UserState {
 
 export const useUserStore = create<UserState>((set, get) => ({
   profile: null,
+  users: [],
   isLoading: false,
   error: null,
 
@@ -34,6 +37,17 @@ export const useUserStore = create<UserState>((set, get) => ({
         error: serverMessage || 'User not found',
         isLoading: false,
       });
+    }
+  },
+
+  fetchAllUsers: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await api.get('/users');
+      set({ users: response.data, isLoading: false });
+    } catch (err) {
+      console.log(err);
+      set({ error: 'Users not found', isLoading: false });
     }
   },
 
