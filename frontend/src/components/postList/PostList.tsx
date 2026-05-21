@@ -1,14 +1,18 @@
 import { Link } from 'react-router-dom';
 import { usePostStore } from '../../store/postStore';
 import { formatDate } from '../../lib/formatDate';
+import PostSkeleton from './PostSkeleton';
+import toast from 'react-hot-toast';
 
 const PostList = () => {
   const { posts, isLoading } = usePostStore();
 
   if (isLoading && posts.length === 0) {
     return (
-      <div className="flex justify-center py-20">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
+      <div className="space-y-4">
+        {[1, 2, 3].map((n) => (
+          <PostSkeleton key={n} />
+        ))}
       </div>
     );
   }
@@ -27,7 +31,7 @@ const PostList = () => {
         <Link
           key={post.id}
           to={`/r/${post.community_name}/${post.id}`}
-          className="block bg-white p-4 border border-gray-100 rounded-lg hover:border-orange-500 transition-colors"
+          className="block bg-white p-4 border border-gray-100 rounded-lg hover:border-orange-500 hover:bg-gray-50 transition-colors"
         >
           <div className="flex items-center gap-2 mb-2 text-[10px] text-gray-500">
             <img
@@ -50,6 +54,21 @@ const PostList = () => {
             <div className="bg-gray-100 px-2 py-1 rounded-full">
               Rating: {post.rating || 0}
             </div>
+
+            {/* BUTTON SHARE */}
+            <button
+              onClick={(e) => {
+                e.preventDefault(); // Чтобы ссылка <Link> не срабатывала
+                e.stopPropagation(); // Чтобы событие не шло к родителю
+
+                const postUrl = `${window.location.origin}/r/${post.community_name}/${post.id}`;
+                navigator.clipboard.writeText(postUrl);
+                toast.success('Link copied');
+              }}
+              className="flex items-center gap-1 bg-gray-100 hover:bg-orange-100 hover:text-orange-600 px-2 py-1 rounded-full transition-colors cursor-pointer"
+            >
+              🔗 Share
+            </button>
           </div>
         </Link>
       ))}

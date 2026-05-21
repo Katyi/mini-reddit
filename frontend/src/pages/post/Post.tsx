@@ -120,63 +120,75 @@ const Post = () => {
               </div>
             )}
 
-            {/* Edit and delete buttons */}
-            {isAuthor && (
-              <div className="flex gap-4 mb-4">
-                <button
-                  onClick={() => setIsEditOpen(true)}
-                  className="text-xs font-bold text-gray-500 hover:underline cursor-pointer"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => setIsDeleteModalOpen(true)}
-                  className="text-xs font-bold text-red-500 hover:underline cursor-pointer"
-                >
-                  Delete
-                </button>
-              </div>
-            )}
-
-            {/* VOTE BUTTONS */}
-            <div
-              className={`flex items-center gap-1 rounded-full border border-gray-200 w-fit
-                ${post.user_vote === 1 ? 'bg-[#D93900]' : post.user_vote === -1 ? 'bg-[#6A5CFF]' : 'bg-[#E5EBEE]'}`}
-            >
-              <button
-                onClick={() => handleVote(post.id, 1)}
-                className={`${post.user_vote === 0 ? 'hover:text-[#D93900]' : 'hover:text-white'} p-2 rounded-full transition-colors cursor-pointer
-                  ${post.user_vote === 1 ? 'hover:bg-[#ae2c00] text-white' : post.user_vote === -1 ? 'hover:bg-[#523eff] text-white' : 'hover:bg-gray-200 text-gray-400'}`}
-              >
-                <ArrowIcon
-                  className="w-4 h-4"
-                  vote={post.user_vote}
-                  left={true}
-                />
-              </button>
-
-              <span
-                className={`text-base font-bold text-center my-1 ${post.user_vote === 0 ? 'text-gray-600' : 'text-white'}`}
-              >
-                {post?.rating}
-              </span>
-
-              <button
-                onClick={() => handleVote(post.id, -1)}
-                className={`${post.user_vote === 0 ? 'hover:text-[#6A5CFF]' : 'hover:text-white'} p-2 rounded-full transition-colors cursor-pointer
-                  ${post.user_vote === 1 ? 'hover:bg-[#ae2c00] text-white' : post.user_vote === -1 ? 'hover:bg-[#523eff] text-white' : 'hover:bg-gray-200 text-gray-400'}`}
-              >
-                <ArrowIcon
-                  className="w-4 h-4 rotate-180"
-                  vote={post.user_vote}
-                  left={false}
-                />
-              </button>
-            </div>
-
             {/* Post content */}
             <div className="text-gray-700 leading-relaxed whitespace-pre-wrap mb-8">
               {post?.content}
+            </div>
+
+            {/* VOTE BUTTONS & Edit and delete buttons & Share button */}
+            <div className="flex items-center gap-4">
+              {isAuthor && (
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => setIsEditOpen(true)}
+                    className="text-xs font-bold text-gray-500 hover:underline cursor-pointer"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => setIsDeleteModalOpen(true)}
+                    className="text-xs font-bold text-red-500 hover:underline cursor-pointer"
+                  >
+                    Delete
+                  </button>
+                </div>
+              )}
+
+              <div
+                className={`flex items-center gap-1 rounded-full border border-gray-200 w-fit
+                ${post.user_vote === 1 ? 'bg-[#D93900]' : post.user_vote === -1 ? 'bg-[#6A5CFF]' : 'bg-[#E5EBEE]'}`}
+              >
+                <button
+                  onClick={() => handleVote(post.id, 1)}
+                  className={`${post.user_vote === 0 ? 'hover:text-[#D93900]' : 'hover:text-white'} p-2 rounded-full transition-colors cursor-pointer
+                  ${post.user_vote === 1 ? 'hover:bg-[#ae2c00] text-white' : post.user_vote === -1 ? 'hover:bg-[#523eff] text-white' : 'hover:bg-gray-200 text-gray-400'}`}
+                >
+                  <ArrowIcon
+                    className="w-4 h-4"
+                    vote={post.user_vote}
+                    left={true}
+                  />
+                </button>
+
+                <span
+                  className={`text-base font-bold text-center my-1 ${post.user_vote === 0 ? 'text-gray-600' : 'text-white'}`}
+                >
+                  {post?.rating}
+                </span>
+
+                <button
+                  onClick={() => handleVote(post.id, -1)}
+                  className={`${post.user_vote === 0 ? 'hover:text-[#6A5CFF]' : 'hover:text-white'} p-2 rounded-full transition-colors cursor-pointer
+                  ${post.user_vote === 1 ? 'hover:bg-[#ae2c00] text-white' : post.user_vote === -1 ? 'hover:bg-[#523eff] text-white' : 'hover:bg-gray-200 text-gray-400'}`}
+                >
+                  <ArrowIcon
+                    className="w-4 h-4 rotate-180"
+                    vote={post.user_vote}
+                    left={false}
+                  />
+                </button>
+              </div>
+
+              <button
+                onClick={() => {
+                  const postUrl = window.location.href; // Берем текущий URL страницы
+                  navigator.clipboard.writeText(postUrl);
+                  toast.success('Link copied');
+                }}
+                className="flex items-center gap-2 text-xs font-bold text-gray-600 bg-[#E5EBEE] hover:bg-orange-100 hover:text-orange-600 px-3 py-2.5 rounded-full transition-colors cursor-pointer"
+              >
+                🔗 Share post
+              </button>
             </div>
 
             {/* Секция комментариев */}
