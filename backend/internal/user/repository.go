@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	"errors"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -17,6 +18,10 @@ func NewRepository(db *pgxpool.Pool) *Repository {
 }
 
 func (r *Repository) CreateUser(ctx context.Context, user User) (User, error) {
+	if r.db == nil {
+		return User{}, errors.New("database connection is nil")
+	}
+
 	query := `
 		INSERT INTO users (username, email, password_hash) 
 		VALUES ($1, $2, $3) 
