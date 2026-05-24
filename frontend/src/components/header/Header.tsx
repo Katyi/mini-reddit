@@ -2,6 +2,7 @@ import { Link, useParams } from 'react-router-dom';
 import burger from '../../assets/icons/burger.svg';
 import addIcon from '../../assets/icons/addIcon.svg';
 import chatIcon from '../../assets/icons/chatIcon.svg';
+import notificationsIcon from '../../assets/icons/notifications.svg';
 import aiIcon from '../../assets/icons/ai.svg';
 import { useAuthStore } from '../../store/authStore';
 import { useEffect, useState } from 'react';
@@ -9,6 +10,7 @@ import PostModal from '../postModal/PostModal';
 import { usePostStore } from '../../store/postStore';
 import { useChatStore } from '../../store/chatStore';
 import { useAIChatStore } from '../../store/aiChatStore';
+import { useNotificationStore } from '../../store/notificationStore';
 
 interface HeaderProps {
   isSidebarOpen: boolean;
@@ -16,7 +18,7 @@ interface HeaderProps {
 }
 
 const Header = ({ isSidebarOpen, toggleSidebar }: HeaderProps) => {
-  const { id } = useParams(); // Если есть ID в параметрах, значит мы внутри поста
+  const { id } = useParams();
   const showSearch =
     (location.pathname === '/' || location.pathname.startsWith('/r/')) && !id;
   const { communityName } = useParams();
@@ -27,6 +29,13 @@ const Header = ({ isSidebarOpen, toggleSidebar }: HeaderProps) => {
   const totalUnread = getTotalUnreadCount();
 
   const { toggleAI } = useAIChatStore();
+
+  // Подключаем список уведомлений для отображения счетчика непрочитанных
+  const { notifications } = useNotificationStore();
+
+  const unreadNotificationsCount = notifications.filter(
+    (n) => !n.isRead,
+  ).length;
 
   useEffect(() => {
     if (user) {
@@ -80,20 +89,42 @@ const Header = ({ isSidebarOpen, toggleSidebar }: HeaderProps) => {
             >
               <img src={aiIcon} alt="aiIcon" width={23} height={23} />
             </button>
+
             {/* Button for chat */}
             <button
               onClick={() => openWidget()}
               className="p-2 hover:bg-gray-200 rounded-full cursor-pointer relative"
               title="Chat"
             >
-              <img src={chatIcon} alt="chatIcon" width={20} height={24} />
+              <img src={chatIcon} alt="chatIcon" width={23} height={23} />
 
               {totalUnread > 0 && (
-                <span className="absolute -top-1 -right-1 flex items-center justify-center bg-orange-600 text-white text-[10px] font-bold min-w-[18px] h-[18px] px-1 rounded-full border-2 border-white">
+                <span className="absolute top-0.5 -right-0.5 flex items-center justify-center bg-orange-600 text-white text-[10px] font-bold min-w-[18px] h-[18px] px-1 rounded-full border-2 border-white">
                   {totalUnread > 99 ? '99+' : totalUnread}
                 </span>
               )}
             </button>
+
+            {/* Button for notifications  */}
+            <Link
+              to="/notifications"
+              className="p-1.5 hover:bg-gray-200 rounded-full cursor-pointer relative flex items-center justify-center"
+              title="Notifications"
+            >
+              <img
+                src={notificationsIcon}
+                alt="notifications"
+                width={24}
+                height={24}
+              />
+              {unreadNotificationsCount > 0 && (
+                <span className="absolute top-0.5 -right-0.5 flex items-center justify-center bg-orange-600 text-white text-[10px] font-bold min-w-[18px] h-[18px] px-1 rounded-full border-2 border-white">
+                  {unreadNotificationsCount > 99
+                    ? '99+'
+                    : unreadNotificationsCount}
+                </span>
+              )}
+            </Link>
 
             <button
               onClick={() => setIsPostModalOpen(true)}

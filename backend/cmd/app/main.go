@@ -13,6 +13,7 @@ import (
 	"github.com/Katyi/mini-reddit/backend/internal/comment"
 	"github.com/Katyi/mini-reddit/backend/internal/commentvote"
 	"github.com/Katyi/mini-reddit/backend/internal/community"
+	"github.com/Katyi/mini-reddit/backend/internal/notification"
 	"github.com/Katyi/mini-reddit/backend/internal/post"
 	"github.com/Katyi/mini-reddit/backend/internal/user"
 	"github.com/Katyi/mini-reddit/backend/internal/vote"
@@ -70,17 +71,27 @@ func main() {
 
 	// Kafka
 	kafkaAddr := os.Getenv("KAFKA_URL")
-	kafkaWriter := &kafka.Writer{
+	if kafkaAddr == "" {
+		kafkaAddr = "localhost:9092"
+	}
+	postKafkaWriter := &kafka.Writer{
 		Addr:     kafka.TCP(kafkaAddr),
 		Topic:    "post-events", // Название очереди
 		Balancer: &kafka.LeastBytes{},
 		// RequiredAcks: kafka.RequireOne,
 		// Async:        false,
 	}
-	defer kafkaWriter.Close()
+	defer postKafkaWriter.Close()
+
+	commentKafkaWriter := &kafka.Writer{
+		Addr:     kafka.TCP(kafkaAddr),
+		Topic:    "comment-notifications",
+		Balancer: &kafka.LeastBytes{},
+	}
+	defer commentKafkaWriter.Close()
 
 	// Для постов
-	postRepo := post.NewRepository(dbpool, rdb, kafkaWriter)
+	postRepo := post.NewRepository(dbpool, rdb, postKafkaWriter)
 	postService := post.NewService(postRepo)
 	postHandler := post.NewHandler(postService)
 
@@ -90,7 +101,7 @@ func main() {
 	userHandler := user.NewHandler(userService)
 
 	//Для комментариев
-	commentRepo := comment.NewRepository(dbpool, rdb)
+	commentRepo := comment.NewRepository(dbpool, rdb, commentKafkaWriter)
 	commentService := comment.NewService(commentRepo)
 	commentHandler := comment.NewHandler(commentService)
 
@@ -101,6 +112,8 @@ func main() {
 	hub := chat.NewHub(chatRepo, aiService)
 	go hub.Run()
 	chatHandler := chat.NewHandler(chatService, hub)
+
+	notifier := notification.NewNotificationConsumer(kafkaAddr, hub)
 
 	// Для лайков и дизлайков постов
 	voteRepo := vote.NewRepository(dbpool, rdb)
@@ -186,6 +199,8 @@ func main() {
 
 	// Запускаем слушателя Kafka в фоне
 	go post.StartNotifyConsumer(kafkaAddr)
+
+	go notifier.Start(context.Background())
 
 	err = http.ListenAndServe(":"+port, handler)
 	if err != nil {

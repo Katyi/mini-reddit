@@ -6,6 +6,7 @@ import Post from './pages/post/Post';
 import { Toaster } from 'react-hot-toast';
 import ProfilePage from './pages/profilePage/ProfilePage';
 import ProtectedRoute from './components/ProtectedRoute';
+import { NotificationsPage } from './pages/notifications/NotificationsPage';
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
           <Route path="/r/:communityName/:id" element={<Post />} />
           <Route path="/about" element={<About />} />
           <Route path="/u/:username" element={<ProfilePage />} />
+          <Route path="/notifications" element={<NotificationsPage />} />
           <Route element={<ProtectedRoute />}></Route>
         </Route>
       </Routes>

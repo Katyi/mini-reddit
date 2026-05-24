@@ -8,17 +8,20 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
+	"github.com/segmentio/kafka-go"
 )
 
 type Repository struct {
 	db  *pgxpool.Pool
 	rdb *redis.Client
+	kw  *kafka.Writer
 }
 
-func NewRepository(db *pgxpool.Pool, rdb *redis.Client) *Repository {
+func NewRepository(db *pgxpool.Pool, rdb *redis.Client, kw *kafka.Writer) *Repository {
 	return &Repository{
 		db:  db,
 		rdb: rdb,
+		kw:  kw,
 	}
 }
 
@@ -34,6 +37,7 @@ func (r *Repository) clearCache(ctx context.Context, postID string) {
 }
 
 func (r *Repository) Create(ctx context.Context, c Comment) (Comment, error) {
+	// 1. Вытаскиваем сам комментарий, ID автора поста и имя сообщества за ОДИН запрос
 	query := `
 		WITH inserted_comment AS (
 			INSERT INTO comments (post_id, author_id, content, parent_id)
@@ -41,16 +45,59 @@ func (r *Repository) Create(ctx context.Context, c Comment) (Comment, error) {
 			RETURNING id, post_id, author_id, content, created_at, parent_id
 		)
 		SELECT 
-			ic.id, ic.post_id, ic.author_id, u.username, 
-			ic.content, ic.created_at, ic.parent_id
+			ic.id, ic.post_id, ic.author_id, u.username, ic.content, ic.created_at, ic.parent_id,
+			p.author_id AS post_author_id,
+			c.name AS community_name
 		FROM inserted_comment ic
-		JOIN users u ON ic.author_id = u.id`
+		JOIN users u ON ic.author_id = u.id
+		JOIN posts p ON ic.post_id = p.id
+		JOIN communities c ON p.community_id = c.id`
 
-	err := r.db.QueryRow(ctx, query, c.PostID, c.AuthorID, c.Content, c.ParentID).
-		Scan(&c.ID, &c.PostID, &c.AuthorID, &c.AuthorUsername, &c.Content, &c.CreatedAt, &c.ParentID)
+	var insertedComment Comment
+	var postAuthorID string // Переменная для ID автора поста
+	var communityName string
 
-	r.clearCache(ctx, c.PostID)
-	return c, err
+	err := r.db.QueryRow(ctx, query, c.PostID, c.AuthorID, c.Content, c.ParentID).Scan(
+		&insertedComment.ID, &insertedComment.PostID, &insertedComment.AuthorID, &insertedComment.AuthorUsername,
+		&insertedComment.Content, &insertedComment.CreatedAt, &insertedComment.ParentID,
+		&postAuthorID,
+		&communityName,
+	)
+	if err != nil {
+		return Comment{}, err
+	}
+
+	// 2. Сбрасываем кэш
+	r.clearCache(ctx, insertedComment.PostID)
+
+	// 3. ПРОВЕРКА: отправляем в Kafka ТОЛЬКО если комментирует НЕ автор поста
+	if insertedComment.AuthorID != postAuthorID {
+		event := CommentNotificationEvent{
+			CommentID:      insertedComment.ID,
+			PostID:         insertedComment.PostID,
+			CommentAuthor:  insertedComment.AuthorUsername,
+			CommunityName:  communityName, // <-- Теперь здесь не пустота, а реальное имя!
+			PostAuthorID:   postAuthorID,  // <-- Теперь знаем, кому именно слать уведомление
+			CommentContent: insertedComment.Content,
+			CreatedAt:      insertedComment.CreatedAt,
+		}
+
+		// Сериализуем в JSON и отправляем в Kafka
+		eventJSON, err := json.Marshal(event)
+		if err == nil {
+			err = r.kw.WriteMessages(ctx, kafka.Message{
+				Key:   []byte(event.PostAuthorID), // Ключ — ID автора поста
+				Value: eventJSON,
+			})
+			if err != nil {
+				fmt.Printf("❌ Failed to write message to Kafka: %v\n", err)
+			}
+		} else {
+			fmt.Printf("❌ Failed to marshal comment notification event: %v\n", err)
+		}
+	}
+
+	return insertedComment, err
 }
 
 // Этот метод понадобится позже, чтобы показать комменты под постом

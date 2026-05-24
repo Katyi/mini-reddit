@@ -6,6 +6,7 @@ import { usePostStore } from './postStore';
 import { useAIChatStore } from './aiChatStore';
 import { useCommentStore } from './commentStore';
 import { AI_BOT_ID } from '../constants/aiBotID';
+import { useNotificationStore } from './notificationStore';
 
 const WS_URL = BASE_URL.replace(/^http/, 'ws');
 
@@ -31,31 +32,43 @@ export const useSocketStore = create<SocketState>((set, get) => ({
     };
 
     ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
+      const response = JSON.parse(event.data);
 
       // --- ДИСПЕТЧЕР СОБЫТИЙ ---
-      if (data.type === 'KARMA_UPDATE') {
+      if (response.type === 'notification') {
+        const notificationData = response.data;
+
+        if (notificationData) {
+          useNotificationStore.getState().addNotification({
+            title: notificationData.title || 'New comment',
+            body: notificationData.body || '',
+            link: notificationData.link || '',
+          });
+        }
+      } else if (response.type === 'KARMA_UPDATE') {
         // Обновляем карму в userStore
-        useUserStore.getState().setKarma(data.new_karma);
-      } else if (data.type === 'POST_RATING_UPDATE') {
+        useUserStore.getState().setKarma(response.new_karma);
+      } else if (response.type === 'POST_RATING_UPDATE') {
         // Вызываем метод обновления рейтинга в твоем хранилище постов
-        usePostStore.getState().updatePostRating(data.post_id, data.new_rating);
-      } else if (data.type === 'COMMENT_RATING_UPDATE') {
+        usePostStore
+          .getState()
+          .updatePostRating(response.post_id, response.new_rating);
+      } else if (response.type === 'COMMENT_RATING_UPDATE') {
         useCommentStore
           .getState()
-          .updateCommentRating(data.comment_id, data.new_rating);
+          .updateCommentRating(response.comment_id, response.new_rating);
       } else if (
-        data.sender_id === AI_BOT_ID ||
-        data.receiver_id === AI_BOT_ID
+        response.sender_id === AI_BOT_ID ||
+        response.receiver_id === AI_BOT_ID
       ) {
-        useAIChatStore.getState().addAIMessage(data);
-      } else if (data.receiver_id || data.sender_id) {
+        useAIChatStore.getState().addAIMessage(response);
+      } else if (response.receiver_id || response.sender_id) {
         // Если есть ID отправителя/получателя — это сообщение чата
         const chatStore = useChatStore.getState();
-        chatStore.addMessage(data);
+        chatStore.addMessage(response);
 
-        if (data.sender_id === chatStore.activeChatUser) {
-          chatStore.markAsRead(data.sender_id);
+        if (response.sender_id === chatStore.activeChatUser) {
+          chatStore.markAsRead(response.sender_id);
         }
       }
     };

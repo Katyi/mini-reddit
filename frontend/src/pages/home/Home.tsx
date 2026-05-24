@@ -20,6 +20,7 @@ const Home = () => {
   const navigate = useNavigate();
   const { communityName } = useParams();
   const {
+    // posts,
     isLoading,
     fetchPosts,
     recentPosts,
@@ -110,6 +111,8 @@ const Home = () => {
 
     navigate('/');
   };
+
+  console.log(recentPosts);
 
   return (
     <div className="w-full flex justify-center">
@@ -204,11 +207,17 @@ const Home = () => {
 
             <div className="space-y-3">
               {recentPosts.map((rp) => (
-                <div key={rp.id} className="group cursor-pointer">
+                <div
+                  onClick={() => navigate(`/r/:${rp.community_name}/${rp.id}`)}
+                  key={rp.id}
+                  className="group cursor-pointer hover:bg-gray-100 p-1.5 rounded-lg"
+                >
                   <p className="text-sm font-medium group-hover:text-orange-500 transition-colors line-clamp-2">
                     {rp.title}
                   </p>
-                  <span className="text-[10px] text-gray-400">Just now</span>
+                  <span className="text-[10px] text-gray-400">
+                    {formatDate(rp.created_at)}
+                  </span>
                 </div>
               ))}
               {recentPosts.length === 0 && !isLoading && (
