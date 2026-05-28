@@ -48,7 +48,7 @@ export const useCommentStore = create<CommentState>((set, get) => ({
     // if (!append)
     set({ isLoading: true });
 
-    const limit = 2;
+    const limit = 50; // LIMIT FOR PAGE
     try {
       const res = await api.get(`/posts/${postId}/comments`, {
         params: { search, sort, page, limit },
