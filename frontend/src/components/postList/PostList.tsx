@@ -1,11 +1,57 @@
-import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
 import { usePostStore } from '../../store/postStore';
+import { useCommunityStore } from '../../store/communityStore';
 import { formatDate } from '../../lib/formatDate';
 import PostSkeleton from './PostSkeleton';
 import toast from 'react-hot-toast';
+import { useDebounce } from '../../hooks/useDebounce';
 
-const PostList = () => {
-  const { posts, isLoading } = usePostStore();
+interface PostListProps {
+  sort: string;
+}
+
+const PostList = ({ sort }: PostListProps) => {
+  const { communityName } = useParams();
+  const { posts, fetchPosts, resetPosts, isLoading, searchQuery, hasMore } =
+    usePostStore();
+  const { communities } = useCommunityStore();
+  const [page, setPage] = useState<number>(1);
+
+  const debouncedSearch = useDebounce(searchQuery, 500);
+
+  const currentCommunity = communities.find((c) => c.name === communityName);
+
+  useEffect(() => {
+    const commId = currentCommunity?.id.toString();
+    resetPosts();
+    fetchPosts({
+      communityId: commId,
+      search: debouncedSearch,
+      sort,
+      page: 1,
+      append: false,
+    }).then(() => setPage(1));
+  }, [
+    communityName,
+    currentCommunity?.id,
+    debouncedSearch,
+    sort,
+    fetchPosts,
+    resetPosts,
+  ]);
+
+  const loadMore = () => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchPosts({
+      communityId: currentCommunity?.id.toString(),
+      search: debouncedSearch,
+      sort,
+      page: nextPage,
+      append: true,
+    });
+  };
 
   if (isLoading && posts.length === 0) {
     return (
@@ -72,6 +118,18 @@ const PostList = () => {
           </div>
         </Link>
       ))}
+
+      {/* PAGINATION BUTTON */}
+      {hasMore && !isLoading && (
+        <button
+          onClick={loadMore}
+          disabled={isLoading}
+          className="w-full mt-6 py-3 bg-white border border-gray-200 rounded-xl font-bold text-gray-600 
+                        hover:border-orange-500 hover:text-orange-500 transition-all disabled:opacity-50 cursor-pointer"
+        >
+          Show More
+        </button>
+      )}
 
       {isLoading && (
         <div className="flex justify-center py-4">

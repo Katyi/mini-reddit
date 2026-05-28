@@ -104,19 +104,31 @@ func (h *Handler) GetAllPosts(w http.ResponseWriter, r *http.Request) {
 
 	offset := (page - 1) * limit
 
-	// userID, _ := r.Context().Value(user.UserIDKey).(string)
+	// ТРЮК для hasmore
+	actualLimit := limit + 1
 
-	posts, err := h.service.GetAllPosts(r.Context(), userID, authorID, search, sortBy, limit, offset)
+	posts, err := h.service.GetAllPosts(r.Context(), userID, authorID, search, sortBy, actualLimit, offset)
 	if err != nil {
 		http.Error(w, "failed to fetch posts", http.StatusInternalServerError)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	if posts == nil {
 		posts = []Post{}
 	}
-	json.NewEncoder(w).Encode(posts)
+
+	// Проверяем, вернулся ли "лишний" пост
+	hasMore := false
+	if len(posts) > limit {
+		hasMore = true
+		posts = posts[:limit] // Отрезаем лишний пост, чтобы фронтенд получил ровно limit
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"posts":    posts,
+		"has_more": hasMore,
+	})
 }
 
 func (h *Handler) GetPostByID(w http.ResponseWriter, r *http.Request) {
@@ -275,9 +287,12 @@ func (h *Handler) GetPostsByCommunity(w http.ResponseWriter, r *http.Request) {
 	}
 	offset := (page - 1) * limit
 
+	// ТРЮК для hasmore
+	actualLimit := limit + 1
+
 	userID, _ := r.Context().Value(user.UserIDKey).(string)
 
-	posts, err := h.service.GetPostsByCommunity(r.Context(), communityID, userID, search, sortBy, limit, offset)
+	posts, err := h.service.GetPostsByCommunity(r.Context(), communityID, userID, search, sortBy, actualLimit, offset)
 	if err != nil {
 		http.Error(w, "failed to fetch posts", http.StatusInternalServerError)
 		return
@@ -286,6 +301,17 @@ func (h *Handler) GetPostsByCommunity(w http.ResponseWriter, r *http.Request) {
 	if posts == nil {
 		posts = []Post{}
 	}
+
+	// Проверяем, вернулся ли "лишний" пост
+	hasMore := false
+	if len(posts) > limit {
+		hasMore = true
+		posts = posts[:limit] // Отрезаем лишний пост, чтобы фронтенд получил ровно limit
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(posts)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"posts":    posts,
+		"has_more": hasMore,
+	})
 }

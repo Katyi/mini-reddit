@@ -81,11 +81,13 @@ export const usePostStore = create<PostState>((set, get) => ({
         params: { author_id: authorId, search, sort, page, limit },
       });
 
-      const newPosts = res.data || [];
+      const newPosts = res.data.posts || [];
+      const backendHasMore = res.data.has_more || false;
       set((state) => ({
         posts: append ? [...state.posts, ...newPosts] : newPosts,
         // Если пришло меньше limit, значит на бэкенде посты кончились
-        hasMore: newPosts.length === limit,
+        // hasMore: newPosts.length === limit,
+        hasMore: backendHasMore,
         isLoading: false,
         // Обновляем виджет недавних постов только при первой загрузке
         recentPosts: !append ? newPosts.slice(0, 5) : state.recentPosts,

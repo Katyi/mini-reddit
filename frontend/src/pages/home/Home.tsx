@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { usePostStore } from '../../store/postStore';
 import { useCommunityStore } from '../../store/communityStore';
@@ -8,7 +8,6 @@ import CommunityModal from '../../components/communityModal/CommunityModal';
 import PostList from '../../components/postList/PostList';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../../components/confirmModal/ConfirmModal'; // Импортируй свою новую модалку
-import { useDebounce } from '../../hooks/useDebounce';
 import Select from '../../components/select/Select';
 
 const sortOptions = [
@@ -19,15 +18,7 @@ const sortOptions = [
 const Home = () => {
   const navigate = useNavigate();
   const { communityName } = useParams();
-  const {
-    // posts,
-    isLoading,
-    fetchPosts,
-    recentPosts,
-    hasMore,
-    searchQuery,
-    resetPosts,
-  } = usePostStore();
+  const { isLoading, recentPosts } = usePostStore();
   const { communities, deleteCommunity } = useCommunityStore();
   const { user } = useAuthStore();
 
@@ -38,50 +29,15 @@ const Home = () => {
   );
 
   const [sort, setSort] = useState('new');
-  const [page, setPage] = useState<number>(1);
   const [isSelectOpen, setIsSelectOpen] = useState(false);
 
   const currentSortLabel =
     sortOptions.find((o) => o.value === sort)?.label || 'Newest';
 
-  const debouncedSearch = useDebounce(searchQuery, 500);
-
   const currentCommunity = communities.find((c) => c.name === communityName);
-
-  useEffect(() => {
-    const commId = currentCommunity?.id.toString();
-    resetPosts();
-    fetchPosts({
-      communityId: commId,
-      search: debouncedSearch,
-      sort,
-      page: 1,
-      append: false,
-    }).then(() => setPage(1));
-  }, [
-    communityName,
-    currentCommunity?.id,
-    debouncedSearch,
-    sort,
-    fetchPosts,
-    resetPosts,
-  ]);
 
   const handleSortChange = (val: string) => {
     setSort(val);
-    setPage(1); // Сбрасываем страницу при смене сортировки
-  };
-
-  const loadMore = () => {
-    const nextPage = page + 1;
-    setPage(nextPage);
-    fetchPosts({
-      communityId: currentCommunity?.id.toString(),
-      search: debouncedSearch,
-      sort,
-      page: nextPage,
-      append: true,
-    });
   };
 
   const openDeleteConfirm = (id: string) => {
@@ -111,8 +67,6 @@ const Home = () => {
 
     navigate('/');
   };
-
-  console.log(recentPosts);
 
   return (
     <div className="w-full flex justify-center">
@@ -182,19 +136,7 @@ const Home = () => {
               </div>
             )}
 
-            <PostList />
-
-            {/* PAGINATION BUTTON */}
-            {hasMore && !isLoading && (
-              <button
-                onClick={loadMore}
-                disabled={isLoading}
-                className="w-full mt-6 py-3 bg-white border border-gray-200 rounded-xl font-bold text-gray-600 
-                        hover:border-orange-500 hover:text-orange-500 transition-all disabled:opacity-50 cursor-pointer"
-              >
-                Show More
-              </button>
-            )}
+            <PostList sort={sort} />
           </div>
         </section>
 
@@ -208,7 +150,7 @@ const Home = () => {
             <div className="space-y-3">
               {recentPosts.map((rp) => (
                 <div
-                  onClick={() => navigate(`/r/:${rp.community_name}/${rp.id}`)}
+                  onClick={() => navigate(`/r/${rp.community_name}/${rp.id}`)}
                   key={rp.id}
                   className="group cursor-pointer hover:bg-gray-100 p-1.5 rounded-lg"
                 >

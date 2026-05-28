@@ -73,9 +73,11 @@ func (h *Handler) GetCommentsByPost(w http.ResponseWriter, r *http.Request) {
 
 	offset := (page - 1) * limit
 
+	actualLimit := limit + 1
+
 	userID, _ := r.Context().Value(user.UserIDKey).(string)
 
-	comments, err := h.service.GetCommentsByPostID(r.Context(), postID, userID, search, sort, limit, offset)
+	comments, err := h.service.GetCommentsByPostID(r.Context(), postID, userID, search, sort, actualLimit, offset)
 	if err != nil {
 		http.Error(w, "failed to fetch comments", http.StatusInternalServerError)
 		return
@@ -85,8 +87,18 @@ func (h *Handler) GetCommentsByPost(w http.ResponseWriter, r *http.Request) {
 		comments = []Comment{}
 	}
 
+	hasMore := false
+	if len(comments) > limit {
+		hasMore = true
+		comments = comments[:limit] // Отрезаем лишний комментарий, чтобы фронтенд получил ровно limit
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(comments)
+	// json.NewEncoder(w).Encode(comments)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"comments": comments,
+		"has_more": hasMore,
+	})
 }
 
 func (h *Handler) UpdateComment(w http.ResponseWriter, r *http.Request) {

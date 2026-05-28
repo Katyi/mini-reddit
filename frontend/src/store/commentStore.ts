@@ -48,16 +48,18 @@ export const useCommentStore = create<CommentState>((set, get) => ({
     // if (!append)
     set({ isLoading: true });
 
-    const limit = 50;
+    const limit = 2;
     try {
       const res = await api.get(`/posts/${postId}/comments`, {
         params: { search, sort, page, limit },
       });
 
-      const newComments = res.data || [];
+      const newComments = res.data.comments || [];
+      const backendHasMore = res.data.has_more || false;
       set((state) => ({
         comments: append ? [...state.comments, ...newComments] : newComments,
-        hasMore: newComments.length === limit,
+        // hasMore: newComments.length === limit,
+        hasMore: backendHasMore,
         isLoading: false,
       }));
     } catch {
