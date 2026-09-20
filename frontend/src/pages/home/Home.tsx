@@ -118,7 +118,6 @@ const Home = () => {
                         Edit
                       </button>
                       <button
-                        // onClick={() => setIsConfirmDeleteOpen(true)}
                         onClick={() => openDeleteConfirm(currentCommunity.id)}
                         className="px-4 py-1.5 bg-red-50 text-red-600 border border-red-200 rounded-full text-sm font-bold hover:bg-red-100 transition-colors cursor-pointer"
                       >
@@ -141,8 +140,8 @@ const Home = () => {
         </section>
 
         {/* Правая панель: занимает 4 колонки, скрывается на маленьких экранах */}
-        <aside className="hidden lg:block lg:col-span-4 space-y-4">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sticky">
+        <aside className="hidden lg:sticky lg:block lg:top-[79px] lg:col-span-4 space-y-4 h-fit">
+          <div className="bg-gray-100 rounded-xl shadow-sm border border-gray-200 p-4 sticky">
             <h3 className="font-bold mb-3 text-[#576F76] text-xs uppercase tracking-widest">
               Recent Posts
             </h3>

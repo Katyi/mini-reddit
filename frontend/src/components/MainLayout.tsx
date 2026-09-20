@@ -45,14 +45,14 @@ const MainLayout = () => {
         isSidebarOpen={isSidebarOpen}
         toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
       />
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1">
         {/* Drawer/Sidebar */}
         <Drawer
           isOpen={isSidebarOpen}
           toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         />
 
-        <main className="flex-1 overflow-y-auto bg-gray-50 transition-all duration-300">
+        <main className="flex-1 bg-gray-50 transition-all duration-300">
           <Outlet />
         </main>
       </div>
